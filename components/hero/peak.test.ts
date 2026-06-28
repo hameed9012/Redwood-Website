@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PEAK_BOTTLES, PeakRegistry, type PeakLetter } from './peak';
+import type { Object3D } from 'three';
+import { PEAK_BOTTLES, PeakRegistry } from './peak';
 
 describe('PEAK definitions', () => {
   it('has exactly four bottles spelling P-E-A-K with fixed drug pairings', () => {
@@ -19,8 +20,8 @@ describe('PeakRegistry', () => {
   beforeEach(() => { reg = new PeakRegistry(); });
 
   it('registers and queries the four as a set', () => {
-    const fakeObj = (l: PeakLetter) => ({ userData: {} } as any);
-    PEAK_BOTTLES.forEach((b) => reg.register(b.letter, fakeObj(b.letter)));
+    const fakeObj = () => ({ userData: {} } as unknown as Object3D);
+    PEAK_BOTTLES.forEach((b) => reg.register(b.letter, fakeObj()));
     const all = reg.all();
     expect(all).toHaveLength(4);
     expect(all.map((e) => e.letter).sort()).toEqual(['A', 'E', 'K', 'P']);
@@ -29,12 +30,12 @@ describe('PeakRegistry', () => {
 
   it('isComplete() is false until all four are present', () => {
     expect(reg.isComplete()).toBe(false);
-    PEAK_BOTTLES.forEach((b) => reg.register(b.letter, { userData: {} } as any));
+    PEAK_BOTTLES.forEach((b) => reg.register(b.letter, { userData: {} } as unknown as Object3D));
     expect(reg.isComplete()).toBe(true);
   });
 
   it('tagObject writes isPeakBottle/letter/drug onto userData', () => {
-    const obj = { userData: {} } as any;
+    const obj = { userData: {} } as unknown as Object3D;
     reg.tagObject(obj, 'A');
     expect(obj.userData.isPeakBottle).toBe(true);
     expect(obj.userData.peakLetter).toBe('A');
