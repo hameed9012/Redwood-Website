@@ -11,6 +11,11 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        'rw-black': 'var(--rw-black)',
+        'rw-charcoal': 'var(--rw-charcoal)',
+        'rw-red': 'var(--rw-red)',
+        'rw-red-deep': 'var(--rw-red-deep)',
+        'rw-bone': 'var(--rw-bone)',
       },
     },
   },
