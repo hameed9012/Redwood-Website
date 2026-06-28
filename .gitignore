@@ -43,3 +43,8 @@ next-env.d.ts
 
 # build output log (temp)
 build.log
+
+# Playwright + smoke-check artifacts
+.playwright-mcp/
+smoke-*.png
+devserver.log

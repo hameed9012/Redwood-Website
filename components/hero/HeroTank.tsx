@@ -35,7 +35,7 @@ export function HeroTank() {
       camera={{ position: [0, 0, 6], fov: 50 }}
       gl={{ antialias: true, alpha: false }}
     >
-      <Environment files={quality.hdriPath} />
+      <Environment files={quality.hdriPath} environmentIntensity={1.8} />
       <TankScene registry={registry} quality={quality} />
       {quality.postprocessing && (
         <EffectComposer>
