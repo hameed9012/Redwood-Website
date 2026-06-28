@@ -1,0 +1,65 @@
+<h2>Hero composition — where does the text anchor?</h2>
+<p class="subtitle">Tank fills the whole viewport in both. Difference is where the copy sits, how much open water shows, and where the puzzle tray lives. Flooded-Vault mood applied.</p>
+
+<style>
+  .vp { position:relative; height:340px; border-radius:8px; overflow:hidden;
+    background:radial-gradient(120% 90% at 50% 120%, #15282b 0%, #0a1518 55%, #050a0c 100%); }
+  .vp .vig { position:absolute; inset:0; background:radial-gradient(140% 100% at 50% 0%, transparent 40%, rgba(5,10,12,.85) 100%); }
+  .vp .b { position:absolute; border-radius:30px; background:linear-gradient(#8fb6b2,#33575a); opacity:.7; filter:blur(1px); }
+  .hello { font-size:13px; color:#fff; opacity:.9; }
+  .big { font-size:30px; font-weight:800; color:#fff; letter-spacing:-1px; line-height:1; }
+  .weare { font-size:14px; color:#fff; }
+  .cyc { color:#b91c1c; font-weight:600; }
+  .cta { display:inline-block; font-size:11px; padding:7px 14px; border-radius:4px; margin-right:8px; }
+  .cta.solid { background:#b91c1c; color:#fff; }
+  .cta.ghost { border:1px solid rgba(255,255,255,.35); color:#fff; }
+  .tray { position:absolute; left:50%; transform:translateX(-50%); bottom:12px; width:160px; height:30px;
+    border:1px dashed rgba(255,255,255,.25); border-radius:6px; display:flex; align-items:center; justify-content:center;
+    font-size:9px; letter-spacing:2px; color:rgba(255,255,255,.4); }
+  .spk { position:absolute; top:12px; right:14px; width:22px; height:22px; border-radius:50%;
+    border:1px solid rgba(255,255,255,.3); color:rgba(255,255,255,.5); font-size:11px; display:flex; align-items:center; justify-content:center; }
+</style>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">A · Left-anchored, tray bottom-center</div>
+    <div class="mockup-body" style="padding:0;">
+      <div class="vp">
+        <div class="b" style="left:62%; top:24%; width:30px; height:80px;"></div>
+        <div class="b" style="left:78%; top:50%; width:22px; height:60px; opacity:.5; filter:blur(2px);"></div>
+        <div class="b" style="left:50%; top:60%; width:26px; height:68px; opacity:.6;"></div>
+        <div class="vig"></div>
+        <div class="spk">♪</div>
+        <div style="position:absolute; left:30px; top:50%; transform:translateY(-50%);">
+          <div class="hello">Hello,</div>
+          <div class="big">The Redwood Co.</div>
+          <div class="weare" style="margin:8px 0 14px;">We are <span class="cyc">A Pharmaceutical company</span></div>
+          <span class="cta solid">Apply Now</span><span class="cta ghost">Join Us</span>
+        </div>
+        <div class="tray">DROP TRAY</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">B · Centered, tray as a shelf along the floor</div>
+    <div class="mockup-body" style="padding:0;">
+      <div class="vp">
+        <div class="b" style="left:20%; top:26%; width:28px; height:74px;"></div>
+        <div class="b" style="left:74%; top:30%; width:24px; height:64px; opacity:.55; filter:blur(2px);"></div>
+        <div class="b" style="left:84%; top:58%; width:20px; height:54px; opacity:.45; filter:blur(2.5px);"></div>
+        <div class="vig"></div>
+        <div class="spk">♪</div>
+        <div style="position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); text-align:center;">
+          <div class="hello">Hello,</div>
+          <div class="big">The Redwood Co.</div>
+          <div class="weare" style="margin:8px 0 14px;">We are <span class="cyc">Creators for the better good of America</span></div>
+          <span class="cta solid">Apply Now</span><span class="cta ghost">Join Us</span>
+        </div>
+        <div style="position:absolute; left:0; right:0; bottom:0; height:40px; background:linear-gradient(transparent, rgba(0,0,0,.5)); border-top:1px dashed rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; font-size:9px; letter-spacing:2px; color:rgba(255,255,255,.4);">— — — SETTLING SHELF — — —</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:16px;">My lean: <strong>A</strong>. Left-anchored copy keeps the right two-thirds of the tank as open water (so the rise-from-darkness reads clearly), and a discrete bottom-center tray feels like a deliberate slot rather than furniture. B's full-width "shelf" is more dramatic but eats vertical space the cycling text and rising bottles want. Speaker toggle top-right in both.</p>
