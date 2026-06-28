@@ -1,0 +1,40 @@
+'use client';
+
+import { useCallback } from 'react';
+import type { Object3D } from 'three';
+import { HeroBottle } from './HeroBottle';
+import { PEAK_BOTTLES, type PeakLetter, type PeakRegistry } from '../peak';
+
+interface HeroBottlesProps {
+  registry: PeakRegistry;
+}
+
+/** Fixed resting positions for the four PEAK bottles in the foreground. */
+const POSITIONS: Record<PeakLetter, [number, number, number]> = {
+  P: [-2.4, -0.5, 1.5],
+  E: [-0.8, 0.3, 1.2],
+  A: [0.8, -0.3, 1.4],
+  K: [2.4, 0.5, 1.1],
+};
+
+export function HeroBottles({ registry }: HeroBottlesProps) {
+  const handleReady = useCallback(
+    (letter: PeakLetter, object: Object3D) => {
+      registry.register(letter, object);
+    },
+    [registry],
+  );
+
+  return (
+    <group>
+      {PEAK_BOTTLES.map((b) => (
+        <HeroBottle
+          key={b.letter}
+          letter={b.letter}
+          position={POSITIONS[b.letter]}
+          onReady={handleReady}
+        />
+      ))}
+    </group>
+  );
+}
