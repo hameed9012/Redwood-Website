@@ -40,3 +40,6 @@ next-env.d.ts
 
 # Superpowers brainstorm scratch (mockups + local server state)
 .superpowers/
+
+# build output log (temp)
+build.log
