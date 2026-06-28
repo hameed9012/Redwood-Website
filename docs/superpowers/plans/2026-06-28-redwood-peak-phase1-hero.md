@@ -2839,15 +2839,18 @@ git commit -m "docs: v0.1.0 changelog — Welcome to Redwood Peak"
 
 ---
 
-## Task 28: Push Phase 1
+## Task 28: Hand off for push (DO NOT PUSH)
 
-- [ ] **Step 1: Push to origin**
+**Project standing rule:** all work happens on the `staging` branch; never commit to `main`; **never run `git push`** (any branch). The user pushes themselves. `main` is touched only on an explicit production-ship order.
 
-Run:
+- [ ] **Step 1: Stop and report — do not push**
+
+Do **not** run `git push`. After Task 27's changelog commit, confirm the working tree is clean on `staging`:
 ```bash
-git push origin main
+git status
+git log --oneline -5
 ```
-Expected: all Phase 1 commits land on the remote.
+Then tell the user Phase 1 is complete on `staging` and ready for them to push. The user runs the push.
 
 ---
 
