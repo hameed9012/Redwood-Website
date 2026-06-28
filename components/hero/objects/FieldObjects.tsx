@@ -1,8 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import gsap from 'gsap';
 import { fieldBottleGeometry, syringeGeometry } from './proceduralBottleGeo';
 import { createGlassMaterial } from './glassMaterial';
+import { buildRiseSchedule } from '../useIntroRise';
 
 interface FieldObjectsProps {
   count: number;
@@ -42,8 +44,33 @@ export function FieldObjects({ count, seed = 1337 }: FieldObjectsProps) {
 
   const material = useMemo(() => createGlassMaterial(), []);
 
+  const groupRef = useRef<import('three').Group>(null);
+
+  useEffect(() => {
+    if (!groupRef.current) return;
+    const schedule = buildRiseSchedule(items.length, seed);
+    const children = groupRef.current.children;
+    const tweens = children.map((child, i) => {
+      const cfg = schedule[i];
+      const targetY = child.position.y;
+      child.position.y = targetY - 10; // start below frame (darkness)
+      const tl = gsap.timeline({ delay: cfg.startDelay });
+      if (cfg.pauseMidway) {
+        tl.to(child.position, { y: targetY - 4, duration: cfg.duration * 0.4, ease: 'sine.out' })
+          .to(child.position, { y: targetY, duration: cfg.duration * 0.6, ease: 'sine.inOut', delay: 0.6 });
+      } else {
+        tl.to(child.position, { y: targetY, duration: cfg.duration, ease: 'sine.inOut' });
+      }
+      if (cfg.rotateWhileRising) {
+        tl.to(child.rotation, { y: child.rotation.y + Math.PI, duration: cfg.duration, ease: 'none' }, 0);
+      }
+      return tl;
+    });
+    return () => tweens.forEach((t) => t.kill());
+  }, [items, seed]);
+
   return (
-    <group>
+    <group ref={groupRef}>
       {items.map((it) => (
         <mesh
           key={it.key}
