@@ -305,6 +305,12 @@ logo layer is addressable for the Phase 2 flicker/darkness moments.
   scroll-to-top replay (phrases only) → hover-to-read rotation + lazy return → cursor ripple → Join Us opens
   Discord → Apply Now disabled state → audio toggle works and never autoplays.
 - Quick low-end check: throttled/mobile profile still renders a coherent simplified tank, no frame collapse.
+- **PEAK tagging contract (Phase 2 depends on this):** confirm the scene contains exactly four hero
+  bottles and that each resolves its tagging correctly — `isPeakBottle === true`, a unique letter from
+  {P, E, A, K}, and the correct drug name (P=Propofol, E=Etomidate, A=Atropine, K=Ketamine). Verify the
+  four are **queryable as a set** from outside the object (e.g. a scene lookup / registry returns exactly
+  those four with letters and names intact), not merely that the tank renders. This must pass before Phase 1
+  is called done, since Phase 2's drag/order/solve logic keys off it.
 
 ---
 
