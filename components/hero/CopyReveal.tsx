@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { HERO_PHRASES, nextPhraseIndex } from './phrases';
+import { useRevealSequence } from './useRevealSequence';
 
 const PHRASE_HOLD_MS = 3000;
 
 export function CopyReveal() {
   const [index, setIndex] = useState(0);
+  const mode = useRevealSequence();
+  const showIntro = mode === 'full';
 
   useEffect(() => {
     const id = setInterval(
@@ -18,10 +21,14 @@ export function CopyReveal() {
 
   return (
     <div className="select-none">
-      <p className="text-rw-bone text-lg">Hello,</p>
-      <h1 className="text-rw-bone text-5xl md:text-7xl font-extrabold tracking-tight leading-none">
-        The Redwood Co.
-      </h1>
+      {showIntro && (
+        <>
+          <p className="text-rw-bone text-lg">Hello,</p>
+          <h1 className="text-rw-bone text-5xl md:text-7xl font-extrabold tracking-tight leading-none">
+            The Redwood Co.
+          </h1>
+        </>
+      )}
       <p className="text-rw-bone text-lg mt-3">
         We are a{' '}
         <span className="relative inline-block align-baseline">
