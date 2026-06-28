@@ -1,41 +1,39 @@
-# Dependencies
-node_modules/
-.pnp
-.pnp.*
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Next.js
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# testing
+/coverage
+
+# next.js
 /.next/
 /out/
+
+# production
 /build
-next-env.d.ts
 
-# Production
-/dist
+# misc
+.DS_Store
+*.pem
 
-# Environment / secrets
-.env
-.env*.local
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Vercel
-.vercel
-
-# Debug logs
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
 
-# OS / editor
-.DS_Store
-*.pem
-Thumbs.db
+# local env files
+.env*.local
 
-# TypeScript
+# vercel
+.vercel
+
+# typescript
 *.tsbuildinfo
+next-env.d.ts
 
 # Claude Code local settings (machine-specific; do not commit)
 .claude/settings.local.json
