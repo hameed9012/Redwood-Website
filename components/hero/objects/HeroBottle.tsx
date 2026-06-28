@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, Suspense, Component, type ReactNode } from 'react';
+import { useRef, useEffect, useMemo, Suspense, Component, type ReactNode } from 'react';
 import type { Mesh, Object3D, Group } from 'three';
 import { useGLTF } from '@react-three/drei';
 import { heroBottleGeometry } from './proceduralBottleGeo';
@@ -11,7 +11,11 @@ import type { PeakLetter } from '../peak';
 interface HeroBottleProps {
   letter: PeakLetter;
   position: [number, number, number];
-  /** Called with the rendered root Object3D so a registry can tag + track it. */
+  /**
+   * Called with the rendered root Object3D so a registry can tag + track it.
+   * MUST be referentially stable (e.g. wrapped in useCallback) — it's an effect
+   * dependency, so an inline arrow would re-register on every parent re-render.
+   */
   onReady: (letter: PeakLetter, object: Object3D) => void;
 }
 
@@ -35,10 +39,13 @@ class GlbErrorBoundary extends Component<{ fallback: ReactNode; children: ReactN
 
 function ProceduralBottle({ letter, onReady }: { letter: PeakLetter; onReady: HeroBottleProps['onReady'] }) {
   const ref = useRef<Mesh>(null);
+  // Memoized so hover-driven re-renders (Task 20) don't rebuild GPU resources each frame.
+  const geometry = useMemo(() => heroBottleGeometry(), []);
+  const material = useMemo(() => createGlassMaterial(), []);
   useEffect(() => {
     if (ref.current) onReady(letter, ref.current);
   }, [letter, onReady]);
-  return <mesh ref={ref} geometry={heroBottleGeometry()} material={createGlassMaterial()} />;
+  return <mesh ref={ref} geometry={geometry} material={material} />;
 }
 
 function GlbBottle({ letter, path, onReady }: { letter: PeakLetter; path: string; onReady: HeroBottleProps['onReady'] }) {
