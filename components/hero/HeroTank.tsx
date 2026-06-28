@@ -9,8 +9,6 @@ import { TankScene } from './TankScene';
 import { PeakRegistry } from './peak';
 import { detectTierFromBrowser, qualityFor, type QualityProfile } from './quality';
 
-const isDev = process.env.NODE_ENV !== 'production';
-
 export function HeroTank() {
   const registry = useMemo(() => new PeakRegistry(), []);
   const [quality, setQuality] = useState<QualityProfile>(() => qualityFor('mid'));
@@ -19,10 +17,13 @@ export function HeroTank() {
     setQuality(qualityFor(detectTierFromBrowser()));
   }, []);
 
-  // Leva is dev-only; import lazily so it is tree-shaken from production (spec §10).
+  // Leva is dev-only. The NODE_ENV check is inlined directly around the dynamic
+  // import so webpack statically evaluates it to `if (false)` in a production
+  // build and drops the import() entirely — no leva chunk ships (spec §10).
   useEffect(() => {
-    if (!isDev) return;
-    void import('leva'); // panel auto-mounts in dev; no-op in prod build
+    if (process.env.NODE_ENV !== 'production') {
+      void import('leva');
+    }
   }, []);
 
   // ChromaticAberration's `offset` prop requires a THREE.Vector2, not a plain array.
