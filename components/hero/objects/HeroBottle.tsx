@@ -3,9 +3,11 @@
 import { useRef, useEffect, useMemo, Suspense, Component, type ReactNode } from 'react';
 import type { Mesh, Object3D, Group } from 'three';
 import { useGLTF } from '@react-three/drei';
+import type { ThreeEvent } from '@react-three/fiber';
 import { heroBottleGeometry } from './proceduralBottleGeo';
 import { createGlassMaterial } from './glassMaterial';
 import { useAssetPresence, shouldRenderGlb } from './useOptionalGLTF';
+import { useHoverToRead, RESTING_LABEL_AWAY } from '../useHoverToRead';
 import type { PeakLetter } from '../peak';
 
 interface HeroBottleProps {
@@ -42,20 +44,39 @@ function ProceduralBottle({ letter, onReady }: { letter: PeakLetter; onReady: He
   // Memoized so hover-driven re-renders (Task 20) don't rebuild GPU resources each frame.
   const geometry = useMemo(() => heroBottleGeometry(), []);
   const material = useMemo(() => createGlassMaterial(), []);
+  const { onPointerOver, onPointerOut } = useHoverToRead();
   useEffect(() => {
     if (ref.current) onReady(letter, ref.current);
   }, [letter, onReady]);
-  return <mesh ref={ref} geometry={geometry} material={material} />;
+  return (
+    <mesh
+      ref={ref}
+      geometry={geometry}
+      material={material}
+      rotation={[0, RESTING_LABEL_AWAY, 0]}
+      onPointerOver={(e) => { e.stopPropagation(); if (ref.current) onPointerOver(ref.current); }}
+      onPointerOut={(e) => { e.stopPropagation(); if (ref.current) onPointerOut(ref.current); }}
+    />
+  );
 }
 
 function GlbBottle({ letter, path, onReady }: { letter: PeakLetter; path: string; onReady: HeroBottleProps['onReady'] }) {
   const { scene } = useGLTF(path) as unknown as { scene: Group };
   const ref = useRef<Group>(null);
+  const { onPointerOver, onPointerOut } = useHoverToRead();
   useEffect(() => {
     if (ref.current) onReady(letter, ref.current);
   }, [letter, onReady]);
   // Drop-in: a committed .glb at GLB_PATH renders here with zero edits elsewhere.
-  return <primitive ref={ref} object={scene} />;
+  return (
+    <primitive
+      ref={ref}
+      object={scene}
+      rotation={[0, RESTING_LABEL_AWAY, 0]}
+      onPointerOver={(e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); if (ref.current) onPointerOver(ref.current); }}
+      onPointerOut={(e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); if (ref.current) onPointerOut(ref.current); }}
+    />
+  );
 }
 
 export function HeroBottle({ letter, position, onReady }: HeroBottleProps) {
