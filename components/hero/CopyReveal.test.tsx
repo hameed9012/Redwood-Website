@@ -6,7 +6,7 @@ describe('CopyReveal', () => {
   it('renders the fixed hero copy', () => {
     render(<CopyReveal />);
     expect(screen.getByText('Hello,')).toBeInTheDocument();
-    expect(screen.getByText('The Redwood Co.')).toBeInTheDocument();
+    expect(screen.getByText('We are The Redwood Co.')).toBeInTheDocument();
     expect(screen.getByText(/We are a/)).toBeInTheDocument();
   });
 

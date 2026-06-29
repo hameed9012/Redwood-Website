@@ -25,7 +25,7 @@ export function CopyReveal() {
         <>
           <p className="text-rw-bone text-lg">Hello,</p>
           <h1 className="text-rw-bone text-5xl md:text-7xl font-extrabold tracking-tight leading-none">
-            The Redwood Co.
+            We are The Redwood Co.
           </h1>
         </>
       )}
