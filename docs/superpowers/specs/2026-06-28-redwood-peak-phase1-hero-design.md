@@ -175,8 +175,14 @@ hero state. Pulled **far enough back** that bottles read **small and spread**, n
 Subtle idle breathing (incommensurate sines) layers on top. The scroll dive (§12) animates this camera
 down and pitches it toward horizontal for the submerged view.
 
-### 6.2 Glass material — **unchanged** (`glassMaterial.ts`)
-`MeshPhysicalMaterial`, `transmission`, tuned via the R1 lighting pass. Shared by every object.
+### 6.2 Glass material — **two-tier (perf decision, R2-3)**
+`MeshPhysicalMaterial` via `glassMaterial.ts`. Real `transmission` is **expensive** — each transmissive
+object forces an extra scene render, and ~40 of them drop this machine's Intel iGPU to ~15 FPS (see
+`docs/superpowers/notes/2026-06-29-perf-diagnosis.md`). Decision: **real transmission only on the
+foreground hero/PEAK bottles** (read up close); the **background field uses a cheaper reflective variant**
+(no transmission — still glassy via the envMap; distant field is fogged anyway). `createGlassMaterial`
+gains a `cheap` option for the field; the hero bottles keep the full recipe. Combined with trimmed
+postprocessing (drop DoF on mid) and lower counts (§13), targets ≥40 FPS at mid tier.
 
 ### 6.3 Object field near the surface
 - Bottles/syringes are **small** and distributed **evenly across the visible water plane** (x/z spread),
