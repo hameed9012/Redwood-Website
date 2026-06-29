@@ -1,13 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { faceCameraRotationY, RESTING_LABEL_AWAY } from './useHoverToRead';
+import { labelUpComponent, RESTING_TILT, READ_TILT } from './useHoverToRead';
 
-describe('hover-to-read orientation', () => {
-  it('resting orientation turns the label away from the viewer', () => {
-    expect(RESTING_LABEL_AWAY).toBeCloseTo(Math.PI, 5);
+describe('hover-to-read orientation (top-down camera)', () => {
+  it('label is edge-on (hidden) at rest', () => {
+    expect(RESTING_TILT).toBe(0);
+    expect(labelUpComponent(RESTING_TILT)).toBeCloseTo(0, 5);
   });
-
-  it('hover target rotates the label to face the camera (y → 0 mod 2π)', () => {
-    const target = faceCameraRotationY(Math.PI);
-    expect(Math.abs(Math.sin(target))).toBeLessThan(1e-6); // facing front
+  it('hover tilts the labelled (+Z) face up to face the top-down camera (+Y)', () => {
+    expect(labelUpComponent(READ_TILT)).toBeCloseTo(1, 5);
   });
 });

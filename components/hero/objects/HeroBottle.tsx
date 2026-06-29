@@ -1,14 +1,16 @@
 'use client';
 
 import { useRef, useEffect, useMemo, Suspense, Component, type ReactNode } from 'react';
-import type { Mesh, Object3D, Group } from 'three';
+import type { Object3D, Group } from 'three';
+import { CanvasTexture } from 'three';
+import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import type { ThreeEvent } from '@react-three/fiber';
 import { heroBottleGeometry } from './proceduralBottleGeo';
 import { createGlassMaterial } from './glassMaterial';
 import { useAssetPresence, shouldRenderGlb } from './useOptionalGLTF';
-import { useHoverToRead, RESTING_LABEL_AWAY } from '../useHoverToRead';
-import type { PeakLetter } from '../peak';
+import { useHoverToRead, RESTING_TILT } from '../useHoverToRead';
+import { driftOffset } from './useAmbientDrift';
+import { drugFor, type PeakLetter } from '../peak';
 
 interface HeroBottleProps {
   letter: PeakLetter;
@@ -39,24 +41,46 @@ class GlbErrorBoundary extends Component<{ fallback: ReactNode; children: ReactN
   }
 }
 
+function BottleLabel({ text }: { text: string }) {
+  const texture = useMemo(() => {
+    if (typeof document === 'undefined') return null;
+    const c = document.createElement('canvas');
+    c.width = 256; c.height = 64;
+    const ctx = c.getContext('2d');
+    if (!ctx) return null; // jsdom / no 2d context → no label (test-safe)
+    ctx.clearRect(0, 0, 256, 64);
+    ctx.fillStyle = '#f5f5f4';
+    ctx.font = 'bold 34px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 128, 32);
+    const t = new CanvasTexture(c);
+    t.needsUpdate = true;
+    return t;
+  }, [text]);
+  if (!texture) return null;
+  return (
+    <mesh position={[0, 0, 0.34]}>
+      <planeGeometry args={[0.5, 0.16]} />
+      <meshBasicMaterial map={texture} transparent depthWrite={false} />
+    </mesh>
+  );
+}
+
 function ProceduralBottle({ letter, onReady }: { letter: PeakLetter; onReady: HeroBottleProps['onReady'] }) {
-  const ref = useRef<Mesh>(null);
-  // Memoized so hover-driven re-renders (Task 20) don't rebuild GPU resources each frame.
+  const ref = useRef<Group>(null);
   const geometry = useMemo(() => heroBottleGeometry(), []);
   const material = useMemo(() => createGlassMaterial(), []);
+  const drug = useMemo(() => drugFor(letter), [letter]);
   const { onPointerOver, onPointerOut } = useHoverToRead();
-  useEffect(() => {
-    if (ref.current) onReady(letter, ref.current);
-  }, [letter, onReady]);
+  useEffect(() => { if (ref.current) onReady(letter, ref.current); }, [letter, onReady]);
   return (
-    <mesh
-      ref={ref}
-      geometry={geometry}
-      material={material}
-      rotation={[0, RESTING_LABEL_AWAY, 0]}
+    <group ref={ref} rotation={[RESTING_TILT, 0, 0]}
       onPointerOver={(e) => { e.stopPropagation(); if (ref.current) onPointerOver(ref.current); }}
-      onPointerOut={(e) => { e.stopPropagation(); if (ref.current) onPointerOut(ref.current); }}
-    />
+      onPointerOut={(e) => { e.stopPropagation(); if (ref.current) onPointerOut(ref.current); }}>
+      <mesh geometry={geometry} material={material} />
+      <BottleLabel text={drug} />
+    </group>
   );
 }
 
@@ -64,38 +88,37 @@ function GlbBottle({ letter, path, onReady }: { letter: PeakLetter; path: string
   const { scene } = useGLTF(path) as unknown as { scene: Group };
   const ref = useRef<Group>(null);
   const { onPointerOver, onPointerOut } = useHoverToRead();
-  useEffect(() => {
-    if (ref.current) onReady(letter, ref.current);
-  }, [letter, onReady]);
-  // Drop-in: a committed .glb at GLB_PATH renders here with zero edits elsewhere.
+  useEffect(() => { if (ref.current) onReady(letter, ref.current); }, [letter, onReady]);
   return (
-    <primitive
-      ref={ref}
-      object={scene}
-      rotation={[0, RESTING_LABEL_AWAY, 0]}
-      onPointerOver={(e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); if (ref.current) onPointerOver(ref.current); }}
-      onPointerOut={(e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); if (ref.current) onPointerOut(ref.current); }}
-    />
+    <group ref={ref} rotation={[RESTING_TILT, 0, 0]}
+      onPointerOver={(e) => { e.stopPropagation(); if (ref.current) onPointerOver(ref.current); }}
+      onPointerOut={(e) => { e.stopPropagation(); if (ref.current) onPointerOut(ref.current); }}>
+      <primitive object={scene} />
+    </group>
   );
 }
 
 export function HeroBottle({ letter, position, onReady }: HeroBottleProps) {
   const status = useAssetPresence(GLB_PATH[letter]);
-  // Procedural renders immediately for pending/absent, so tagging fires at t0
-  // and the scene never suspends on a missing model file.
-  const procedural = <ProceduralBottle letter={letter} onReady={onReady} />;
+  const groupRef = useRef<Group>(null);
+  const phase = useMemo(() => ({ P: 0.12, E: 0.41, A: 0.68, K: 0.91 }[letter]), [letter]);
 
+  useFrame(({ clock }) => {
+    const g = groupRef.current;
+    if (!g) return;
+    const d = driftOffset(clock.elapsedTime, phase);
+    g.position.set(position[0] + d.x, position[1] + d.y, position[2] + d.z);
+    g.rotation.set(0, d.rotY * 0.5, d.rotZ); // X left at 0 so drift never fights the hover tilt
+  });
+
+  const procedural = <ProceduralBottle letter={letter} onReady={onReady} />;
   return (
-    <group position={position}>
+    <group ref={groupRef} position={position} scale={0.5}>
       {shouldRenderGlb(status) ? (
         <GlbErrorBoundary fallback={procedural}>
-          <Suspense fallback={procedural}>
-            <GlbBottle letter={letter} path={GLB_PATH[letter]} onReady={onReady} />
-          </Suspense>
+          <Suspense fallback={procedural}><GlbBottle letter={letter} path={GLB_PATH[letter]} onReady={onReady} /></Suspense>
         </GlbErrorBoundary>
-      ) : (
-        procedural
-      )}
+      ) : (procedural)}
     </group>
   );
 }

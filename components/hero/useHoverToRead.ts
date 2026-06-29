@@ -4,37 +4,29 @@ import { useRef } from 'react';
 import gsap from 'gsap';
 import type { Object3D } from 'three';
 
-/** Label points away from camera at rest (spec §6.10, §9.2). */
-export const RESTING_LABEL_AWAY = Math.PI;
+/**
+ * Top-down camera reads the label only if the bottle TILTS its labelled side up
+ * toward the camera. Bottle stands upright along local Y with its label on local +Z.
+ * At rest it's upright (label edge-on to a camera looking straight down → hidden).
+ * On hover it tips ~90° about X so the +Z label face lifts to point up (+Y) at the camera.
+ */
+export const RESTING_TILT = 0;
+export const READ_TILT = -Math.PI / 2;
 
-/** Rotation that turns the label to face the camera. */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function faceCameraRotationY(_resting: number): number {
-  return 0;
+/** Y-component (world up) of the label normal (local +Z) after rotating tiltX about X. 0=hidden, 1=facing camera. */
+export function labelUpComponent(tiltX: number): number {
+  return -Math.sin(tiltX);
 }
 
-export function useHoverToRead(restingY: number = RESTING_LABEL_AWAY) {
+export function useHoverToRead(restingTilt: number = RESTING_TILT) {
   const tween = useRef<gsap.core.Tween | null>(null);
-
   const onPointerOver = (obj: Object3D) => {
     tween.current?.kill();
-    // Rotate toward camera over ~0.5s with a soft, slightly-overshooting ease.
-    tween.current = gsap.to(obj.rotation, {
-      y: faceCameraRotationY(restingY),
-      duration: 0.5,
-      ease: 'back.out(1.4)',
-    });
+    tween.current = gsap.to(obj.rotation, { x: READ_TILT, duration: 0.5, ease: 'back.out(1.4)' });
   };
-
   const onPointerOut = (obj: Object3D) => {
     tween.current?.kill();
-    // Lazily drift back — does not snap (spec §9.2).
-    tween.current = gsap.to(obj.rotation, {
-      y: restingY,
-      duration: 1.1,
-      ease: 'back.out(1.1)',
-    });
+    tween.current = gsap.to(obj.rotation, { x: restingTilt, duration: 1.1, ease: 'back.out(1.1)' });
   };
-
   return { onPointerOver, onPointerOut };
 }

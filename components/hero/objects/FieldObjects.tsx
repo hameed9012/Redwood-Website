@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import type { Group, Mesh } from 'three';
 import gsap from 'gsap';
 import { fieldBottleGeometry, syringeGeometry } from './proceduralBottleGeo';
 import { createGlassMaterial } from './glassMaterial';
 import { buildRiseSchedule } from '../useIntroRise';
+import { driftOffset } from './useAmbientDrift';
 
 interface FieldObjectsProps {
   count: number;
@@ -25,61 +28,59 @@ function mulberry32(seed: number) {
 export function FieldObjects({ count, seed = 1337 }: FieldObjectsProps) {
   const bottleGeo = useMemo(() => fieldBottleGeometry(), []);
   const syringeGeo = useMemo(() => syringeGeometry(), []);
+  const material = useMemo(() => createGlassMaterial(), []);
 
   const items = useMemo(() => {
     const rand = mulberry32(seed);
     return Array.from({ length: count }, (_, i) => ({
       key: i,
       isSyringe: rand() > 0.7,
-      // Distributed across real z-depth: most far back (negative z).
-      position: [
-        (rand() - 0.5) * 8,
-        (rand() - 0.5) * 6,
-        -1 - rand() * 12,
-      ] as [number, number, number],
-      rotation: [rand() * Math.PI, rand() * Math.PI, rand() * Math.PI] as [number, number, number],
+      rest: [(rand() - 0.5) * 8, (rand() - 0.5) * 6, -1 - rand() * 12] as [number, number, number],
+      baseRot: [rand() * Math.PI, rand() * Math.PI, rand() * Math.PI] as [number, number, number],
       scale: 0.6 + rand() * 0.8,
+      phase: rand(),
     }));
   }, [count, seed]);
 
-  const material = useMemo(() => createGlassMaterial(), []);
-
-  const groupRef = useRef<import('three').Group>(null);
+  const groupRef = useRef<Group>(null);
+  const enter = useRef<number[]>([]);
 
   useEffect(() => {
-    if (!groupRef.current) return;
+    enter.current = items.map(() => -10);
     const schedule = buildRiseSchedule(items.length, seed);
-    const children = groupRef.current.children;
-    const tweens = children.map((child, i) => {
-      const cfg = schedule[i];
-      const targetY = child.position.y;
-      child.position.y = targetY - 10; // start below frame (darkness)
+    const tweens = schedule.map((cfg, i) => {
+      const o = { v: -10 };
       const tl = gsap.timeline({ delay: cfg.startDelay });
       if (cfg.pauseMidway) {
-        tl.to(child.position, { y: targetY - 4, duration: cfg.duration * 0.4, ease: 'sine.out' })
-          .to(child.position, { y: targetY, duration: cfg.duration * 0.6, ease: 'sine.inOut', delay: 0.6 });
+        tl.to(o, { v: -4, duration: cfg.duration * 0.4, ease: 'sine.out', onUpdate: () => (enter.current[i] = o.v) })
+          .to(o, { v: 0, duration: cfg.duration * 0.6, ease: 'sine.inOut', delay: 0.6, onUpdate: () => (enter.current[i] = o.v) });
       } else {
-        tl.to(child.position, { y: targetY, duration: cfg.duration, ease: 'sine.inOut' });
-      }
-      if (cfg.rotateWhileRising) {
-        tl.to(child.rotation, { y: child.rotation.y + Math.PI, duration: cfg.duration, ease: 'none' }, 0);
+        tl.to(o, { v: 0, duration: cfg.duration, ease: 'sine.inOut', onUpdate: () => (enter.current[i] = o.v) });
       }
       return tl;
     });
     return () => tweens.forEach((t) => t.kill());
   }, [items, seed]);
 
+  useFrame(({ clock }) => {
+    const g = groupRef.current;
+    if (!g) return;
+    const t = clock.elapsedTime;
+    for (let i = 0; i < g.children.length; i++) {
+      const child = g.children[i] as Mesh;
+      const it = items[i];
+      const d = driftOffset(t, it.phase);
+      const e = enter.current[i] ?? 0;
+      child.position.set(it.rest[0] + d.x, it.rest[1] + e + d.y, it.rest[2] + d.z);
+      child.rotation.set(it.baseRot[0] + d.rotX, it.baseRot[1] + d.rotY, it.baseRot[2] + d.rotZ);
+    }
+  });
+
   return (
     <group ref={groupRef}>
       {items.map((it) => (
-        <mesh
-          key={it.key}
-          geometry={it.isSyringe ? syringeGeo : bottleGeo}
-          material={material}
-          position={it.position}
-          rotation={it.rotation}
-          scale={it.scale}
-        />
+        <mesh key={it.key} geometry={it.isSyringe ? syringeGeo : bottleGeo} material={material}
+          position={it.rest} rotation={it.baseRot} scale={it.scale} />
       ))}
     </group>
   );
