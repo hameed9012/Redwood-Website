@@ -17,9 +17,14 @@ this is a camera/orientation/art-direction rework in the scene layer, not a rebu
 
 **Headline change:** the hero is no longer a side-on "aquarium looking into the tank's depth." It is a
 **top-down bird's-eye view looking straight down onto the surface of a body of water**, with small
-bottles and syringes floating at/near that surface. The original side-on submerged view is **retained**
-but **demoted to a scroll target** — as the visitor scrolls down past the hero, the camera dives and
-pitches from looking-straight-down-at-the-surface into the side-on submerged deep.
+bottles and syringes floating at/near that surface.
+
+**Scope decision (R2):** the original side-on **submerged view and the scroll-driven dive into it are
+deferred to Phase 3**, where they become the underwater backdrop/transition for the public sections
+(history/services/etc.) — matching the original brief's Phase 3 art direction ("descending deeper into a
+submerged facility"). **Phase 1 is the top-down surface hero only**, plus the three R1 bug fixes. The
+submerged view, fish, coffins, and scroll-dive are documented here (§11–§12) as a **Phase 3 forward
+reference**, not built in Phase 1.
 
 Three bugs found in the R1 build are fixed here regardless of the rework (§7.1 PEAK drift, §9.2 hero
 copy, §13 lag investigation).
@@ -44,31 +49,28 @@ independently impressive, leave it out. Cohesion around one feeling beats a pile
 **Chosen mood (unchanged): "Flooded Vault."** Dim, cold, near-black water with a steel-green tint;
 heavy fog into the depth; restrained caustics; ominous but legible. Retain the ability to push darker.
 
-**Chosen composition (REVISED): "Top-down surface, diving to submerged on scroll."**
-- **Hero (top of page):** camera looks **straight down** at the water's surface from above. The surface
-  is alive — real waves, tossing and turning, not flat. Bottles/syringes are **small, spread evenly**
-  across the visible water (not large and clustered at center). Some are "open," leaking pills/particles
-  that drift loosely nearby. In the far distance: a sloped shoreline with a **tanker truck pouring
-  something into the water** (the "poisoning the river" nod — never stated). Hero copy anchored left;
-  audio toggle top-right; discrete drop-tray slot.
-- **Submerged (below the hero, reached by scrolling):** the camera **dives and pitches** into the
-  original side-on submerged "tank" view — genuinely deep and wide, depth receding into fog, things in
-  peripheral vision. Down here: **fish swimming**, bottles **noticeably rarer** (most contents are up at
-  the surface), and — for anyone who looks closely — **a few coffins resting on the very bottom**.
+**Chosen composition (REVISED): "Top-down surface" (Phase 1).**
+- **Hero (the whole of Phase 1):** camera looks **straight down** at the water's surface from above. The
+  surface is alive — real waves, tossing and turning, not flat. Bottles/syringes are **small, spread
+  evenly** across the visible water (not large and clustered at center). Some are "open," leaking
+  pills/particles that drift loosely nearby. In the far distance: a sloped shoreline with a **tanker truck
+  pouring something into the water** (the "poisoning the river" nod — never stated). Hero copy anchored
+  left; audio toggle top-right; discrete drop-tray slot.
+- **Submerged + scroll-dive → Phase 3 (deferred):** documented in §11–§12 as a forward reference; not
+  built in Phase 1.
 
-The cleanest architecture is **one continuous body of water**: surface at the top, deep water below.
-The camera begins looking straight down at the surface and, driven by scroll, descends and pitches to a
-side-on view of the deep. Fog represents **distance downward below the surface** throughout (not distance
-into the screen). See §11–§12.
+Fog represents **distance downward below the surface** (not distance into the screen). Architecturally the
+Phase 1 camera is fixed top-down over the surface; the Phase 3 dive will later animate this same camera
+down into the deep, so Phase 1 builds the surface world in a way that can extend downward later.
 
-### Success criteria
+### Success criteria (Phase 1)
 - The hero reads as **looking down onto living water** with things floating on it — not a side-on tank,
   not elements placed on a page.
 - Real 3D: real perspective camera, real per-object depth, real glass refraction, real surface waves,
   and a **real cursor-driven surface displacement** (the cursor cuts the water and pushes it away,
   ripples radiating outward) — no faked CSS blur/gradient substitutes.
 - Bottles are small, evenly spread, and **continuously drifting** (including the four PEAK bottles).
-- Scrolling down performs a coherent **dive** from the top-down surface into the side-on submerged deep.
+- The distant tanker is visible pouring into the water (easter egg), via the GLB swap-seam.
 - Runs acceptably under a **production build** (`npm run build && npm start`), not just judged in dev.
 - `npm run build` passes with zero errors. Real-browser smoke check passes.
 - A changelog entry (v0.1.x) is produced in Redwood's deadpan faux-corporate voice.
@@ -82,7 +84,7 @@ into the screen). See §11–§12.
 | App shell, routing, DOM/UI | Next.js 14 (App Router), TypeScript, Tailwind CSS |
 | Hero 3D scene graph | React Three Fiber |
 | Renderer | Three.js |
-| Timed choreography (intro rise, hover ease, camera breathing) + **scroll-driven dive** | GSAP (with ScrollTrigger for the dive) |
+| Timed choreography (intro rise, hover ease, camera breathing) | GSAP (ScrollTrigger added in Phase 3 for the dive) |
 | Glass | `MeshPhysicalMaterial` (`transmission`) + HDRI environment map |
 | Water surface (waves + cursor displacement), caustics | Custom GLSL via `ShaderMaterial` |
 | Bloom / DoF / vignette / chromatic aberration | `@react-three/postprocessing` |
@@ -134,9 +136,8 @@ app/page.tsx                          → composes <Hero/> (canvas + overlay) ; 
 components/hero/
   Hero.tsx                            → dynamic(ssr:false) HeroTank + HeroOverlay
   HeroTank.tsx                        → <Canvas>, env map, postprocessing, quality gating, Leva dev-guard
-  WaterWorld.scene.tsx                → the single continuous water world (surface + deep); was TankScene
-  useScrollDive.ts                    → ScrollTrigger-driven camera dive: top-down surface → side-on deep
-  useCameraBreathing.ts               → subtle idle drift (layered on top of the dive)
+  WaterWorld.scene.tsx                → the surface water world (built to extend downward in Phase 3); was TankScene
+  useCameraBreathing.ts               → subtle idle drift
   surface/
     WaterSurface.tsx                  → top-down water plane: real waves + cursor displacement (GLSL)
     shaders/waterSurface.glsl.ts      → wave + cursor-displacement vertex/fragment
@@ -150,15 +151,16 @@ components/hero/
     useAmbientDrift.ts                → shared gentle floating/drift applied to field AND hero bottles
   scenery/
     Tanker.tsx                        → far shoreline + tanker (GLB-or-procedural block) pouring into water
-  deep/
-    Fish.tsx                          → fish swimming in the submerged view
-    Coffins.tsx                       → a few coffins on the bottom (subtle)
-  Bubbles.tsx                         → upward bubbles (deep)
+  Bubbles.tsx                         → upward bubbles
   CausticsPlane.tsx + shaders/caustics.glsl.ts
-  BackgroundLogo.tsx                  → looming mark, now placed on/near the bed (addressable for Phase 2)
+  BackgroundLogo.tsx                  → looming mark, faint beneath the surface (addressable for Phase 2)
   HeroOverlay.tsx                     → DOM: copy reveal, CTAs, audio toggle, tray slot
   CopyReveal.tsx                      → typewriter delete/retype phrase cycler (revised)
   useRevealSequence.ts / phrases.ts / quality.ts / peak.ts  (unchanged)
+
+  # Phase 3 (deferred, NOT built in Phase 1):
+  #   useScrollDive.ts                → ScrollTrigger camera dive: top-down surface → side-on deep
+  #   deep/Fish.tsx, deep/Coffins.tsx → submerged-view life + bottom easter egg
 lib/audio/AmbientScheduler.ts         (unchanged)
 styles/tokens.{ts,css}                (unchanged)
 ```
@@ -214,8 +216,9 @@ particles — **floating loosely nearby**. Enough to read as "things have come o
 cluttered. Counts gated by `quality.ts`.
 
 ### 6.10 Background logo layer
-The looming monochrome mark moves **down onto/near the bed** of the deep water (visible faintly in the
-submerged view, looming below). Still named/addressable so Phase 2 can drive its flicker/darkness moments.
+The looming monochrome mark sits **faintly beneath the surface**, looming below the floating objects, low
+opacity. Still named/addressable so Phase 2 can drive its flicker/darkness moments (and so Phase 3 can sink
+it toward the bed as the camera dives).
 
 ### 6.11 Tanker + shoreline (easter egg) — `scenery/Tanker.tsx`
 In the **far distance**, a **sloped shoreline** (solid ground at an angle) with a **tanker truck** parked
@@ -310,10 +313,12 @@ on a static object.
 
 ---
 
-## 11. Submerged View (scroll target)
+## 11. Submerged View — **Phase 3 (deferred), forward reference**
 
-Below the hero, the camera reaches the **side-on submerged deep** — the original R1 aquarium view,
-retained here. Requirements:
+> Not built in Phase 1. Documented so Phase 1 builds the surface world in a way that can extend downward.
+
+Below the hero (in Phase 3), the camera reaches the **side-on submerged deep** — the original R1 aquarium
+view, retained here. Requirements:
 - **Genuinely deep and wide:** real z/Y depth, things receding into fog in the background and sitting in
   peripheral vision — **not** everything crammed at the front plane.
 - **Fish swimming** (`Fish.tsx`) — simple procedural fish with wander/schooling drift.
@@ -328,9 +333,9 @@ built in this phase** — to be designed separately once the surface→submerged
 
 ---
 
-## 12. Scroll Transition (surface → submerged) — `useScrollDive.ts`
+## 12. Scroll Transition (surface → submerged) — **Phase 3 (deferred)** — `useScrollDive.ts`
 
-One continuous water world; scroll progress drives a GSAP **ScrollTrigger** timeline that:
+> Not built in Phase 1. One continuous water world; scroll progress drives a GSAP **ScrollTrigger** timeline that:
 - moves the camera **downward** from above-the-surface into the deep, and **pitches** it from looking
   straight down (−Y) toward side-on (horizontal),
 - hands off the interaction model from surface-displacement (§10.1) to the gentler submerged drift,
@@ -374,10 +379,11 @@ interactable on every tier. Leva remains dev-only and **stripped from production
 - PEAK drag-to-tray, the fishing ripple/drip on lift (§7.3), order validation, near-miss flicker.
 - Drain sequence, fade-to-black, loading screen, route to login.
 - Session-solved flag.
-- Public sections past the submerged view (history/services/etc.) — undecided.
+- **Submerged side-on view, fish, coffins, and the scroll-dive transition (§11–§12) → Phase 3.**
+- Public sections past the hero (history/services/etc.) → Phase 3.
 
 Phase 1 leaves the seams: tray slot, tagged drifting PEAK bottles, surface-ripple injection point,
-addressable background logo, tanker GLB seam.
+addressable background logo, tanker GLB seam, and a surface world built to extend downward (Phase 3 dive).
 
 ---
 
@@ -389,8 +395,8 @@ addressable background logo, tanker GLB seam.
   **drifting** bottles (PEAK bottles included — confirm they move); moving waves; cursor pushes the water
   and ripples radiate; light sweep across the surface; tanker visible in the distance pouring; copy reads
   "Hello, / We are The Redwood Co. / We are a [typewriter delete-retype cycling]"; hover-to-read works on
-  top of drift; scrolling down **dives** into the side-on submerged deep with fish, rare bottles, and
-  coffins on the bottom; Join Us opens Discord; Apply Now disabled; audio toggle never autoplays.
+  top of drift; Join Us opens Discord; Apply Now disabled; audio toggle never autoplays.
+  (Scroll-dive into the submerged deep is Phase 3 — not verified in Phase 1.)
 - Quick low-end check: coherent simplified water world, no frame collapse.
 - Leva absent from the production bundle.
 
@@ -414,8 +420,9 @@ record of the first cut.)
 6. **Typewriter copy cycler** (§9.2).
 7. **Open bottles + loose contents** (§6.9).
 8. **Tanker + shoreline** via GLB seam + procedural block (§6.11/§8).
-9. **Submerged view** (fish, rare bottles, coffins) (§11).
-10. **Scroll dive transition** surface → submerged (§12).
+9. **Compose + smoke-check + changelog** — Phase 1 done.
+
+(Phase 3, separate spec/plan later: submerged view §11, scroll dive §12, and the public sections.)
 Each step ends green (`npm run build`); a changelog entry when the rework lands.
 
 ---
