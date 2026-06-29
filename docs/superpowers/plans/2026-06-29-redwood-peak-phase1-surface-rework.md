@@ -73,7 +73,17 @@ R1 bug: the four PEAK bottles were given fixed positions + hover only — **stat
 
 **Design:** each object's transform each frame is `rest + (0, enter, 0) + drift(t, phase)`, where `rest` is its resting position, `enter` is a number GSAP animates from −depth→0 for the intro rise (animating a plain JS number, never the mesh transform directly, so GSAP and the per-frame drift don't conflict), and `drift` is small bounded layered sines.
 
-**Files:** Create `components/hero/objects/useAmbientDrift.ts`, `components/hero/objects/useAmbientDrift.test.ts`. Modify `components/hero/objects/FieldObjects.tsx`, `components/hero/objects/HeroBottle.tsx`.
+**Hover-to-read must change too (it does NOT survive the top-down camera).** The R1 hover spins the
+bottle about **Y** (`RESTING_LABEL_AWAY`/`faceCameraRotationY`). The new camera looks straight **down the
+Y axis**, so a Y-spin is invisible from above (spinning a coin flat on a table never shows its edge to a
+camera directly overhead). The label must **tilt up** toward the camera on a horizontal axis. Also: the
+bottles currently render **no label at all** — so a drug-name label must actually be added for hover-to-read
+to mean anything. Both are handled in this task.
+
+**Files:** Create `components/hero/objects/useAmbientDrift.ts`, `components/hero/objects/useAmbientDrift.test.ts`.
+Rewrite `components/hero/useHoverToRead.ts`, `components/hero/useHoverToRead.test.ts`. Modify
+`components/hero/objects/FieldObjects.tsx`, `components/hero/objects/HeroBottle.tsx` (restructure
+ProceduralBottle/GlbBottle for the tilt + add a `BottleLabel`).
 
 - [ ] **Step 1: Write the failing test — `useAmbientDrift.test.ts`**
 
@@ -240,21 +250,176 @@ export function FieldObjects({ count, seed = 1337 }: FieldObjectsProps) {
 }
 ```
 
-- [ ] **Step 6: Add drift to the PEAK bottles in `HeroBottle.tsx`**
+- [ ] **Step 6: Rewrite the hover test for a top-down tilt — `components/hero/useHoverToRead.test.ts`**
 
-The PEAK bottles render via `ProceduralBottle`/`GlbBottle` inside a positioned `<group>`. Add drift to that wrapping group so each bottle floats around its rest position, while hover-rotation continues to act on the inner mesh.
+Replace the file with a test that pins **readability**, not just rotation — the label normal must point at the top-down camera (+Y) on hover and be hidden at rest:
+```ts
+import { describe, it, expect } from 'vitest';
+import { labelUpComponent, RESTING_TILT, READ_TILT } from './useHoverToRead';
 
-In `HeroBottle.tsx`, add imports:
-```tsx
-import { useFrame } from '@react-three/fiber';
-import { driftOffset } from './useAmbientDrift';
+describe('hover-to-read orientation (top-down camera)', () => {
+  it('label is edge-on (hidden) at rest', () => {
+    expect(RESTING_TILT).toBe(0);
+    expect(labelUpComponent(RESTING_TILT)).toBeCloseTo(0, 5);
+  });
+
+  it('hover tilts the labelled (+Z) face up to face the top-down camera (+Y)', () => {
+    expect(labelUpComponent(READ_TILT)).toBeCloseTo(1, 5);
+  });
+});
 ```
-Change the `HeroBottle` component so the outer group drifts. Replace the `HeroBottle` function with:
+
+- [ ] **Step 7: Run it, watch it fail**
+
+Run: `npx vitest run components/hero/useHoverToRead.test.ts`
+Expected: FAIL — `labelUpComponent`/`RESTING_TILT`/`READ_TILT` not exported.
+
+- [ ] **Step 8: Rewrite `components/hero/useHoverToRead.ts` to tilt about X**
+
+```ts
+'use client';
+
+import { useRef } from 'react';
+import gsap from 'gsap';
+import type { Object3D } from 'three';
+
+/**
+ * Top-down camera reads the label only if the bottle TILTS its labelled side up
+ * toward the camera. The bottle stands upright along local Y with its label on
+ * the local +Z face. At rest it's upright (label edge-on to a camera looking
+ * straight down → hidden). On hover it tips ~90° about X so the +Z label face
+ * lifts to point up (+Y) into the top-down camera. (Spec R2 §6.10/§9.2/§10.2.)
+ */
+export const RESTING_TILT = 0;             // upright; label edge-on, illegible from above
+export const READ_TILT = -Math.PI / 2;     // tipped so the +Z label face points up at the camera
+
+/**
+ * Y-component (world up, toward the top-down camera) of the label normal — local
+ * +Z rotated by `tiltX` about X. 0 = edge-on/hidden; 1 = facing the camera. Pure + tested.
+ */
+export function labelUpComponent(tiltX: number): number {
+  return -Math.sin(tiltX);
+}
+
+export function useHoverToRead(restingTilt: number = RESTING_TILT) {
+  const tween = useRef<gsap.core.Tween | null>(null);
+
+  const onPointerOver = (obj: Object3D) => {
+    tween.current?.kill();
+    // Tip the label up toward the camera over ~0.5s with a soft overshoot.
+    tween.current = gsap.to(obj.rotation, { x: READ_TILT, duration: 0.5, ease: 'back.out(1.4)' });
+  };
+
+  const onPointerOut = (obj: Object3D) => {
+    tween.current?.kill();
+    // Lazily settle back upright — does not snap.
+    tween.current = gsap.to(obj.rotation, { x: restingTilt, duration: 1.1, ease: 'back.out(1.1)' });
+  };
+
+  return { onPointerOver, onPointerOut };
+}
+```
+
+- [ ] **Step 9: Run it, watch it pass**
+
+Run: `npx vitest run components/hero/useHoverToRead.test.ts`
+Expected: PASS.
+
+- [ ] **Step 10: Restructure `HeroBottle.tsx` — render a real label, tilt it, and drift the group**
+
+Three changes in `components/hero/objects/HeroBottle.tsx`:
+
+(a) **Imports** — replace `RESTING_LABEL_AWAY` with `RESTING_TILT`; add what the label + drift need:
+```tsx
+import { useRef, useEffect, useMemo, Suspense, Component, type ReactNode } from 'react';
+import type { Mesh, Object3D, Group } from 'three';
+import { CanvasTexture } from 'three';
+import { useFrame } from '@react-three/fiber';
+import { useGLTF } from '@react-three/drei';
+import { heroBottleGeometry } from './proceduralBottleGeo';
+import { createGlassMaterial } from './glassMaterial';
+import { useAssetPresence, shouldRenderGlb } from './useOptionalGLTF';
+import { useHoverToRead, RESTING_TILT } from '../useHoverToRead';
+import { driftOffset } from './useAmbientDrift';
+import { PEAK_BOTTLES, drugFor, type PeakLetter } from '../peak';
+```
+
+(b) **A defensive label** (CanvasTexture plane on the +Z face; returns null under jsdom so the contract
+test stays green) and the **restructured ProceduralBottle/GlbBottle** that tilt about X and carry the
+label as a child so it tilts with the bottle. The tagged/registered object becomes the tilting `<group>`
+(the contract test only checks `userData`, not the node type, so this is safe):
+```tsx
+function BottleLabel({ text }: { text: string }) {
+  const texture = useMemo(() => {
+    if (typeof document === 'undefined') return null;
+    const c = document.createElement('canvas');
+    c.width = 256; c.height = 64;
+    const ctx = c.getContext('2d');
+    if (!ctx) return null; // jsdom / no 2d context → no label (test-safe)
+    ctx.clearRect(0, 0, 256, 64);
+    ctx.fillStyle = '#f5f5f4';
+    ctx.font = 'bold 34px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 128, 32);
+    const t = new CanvasTexture(c);
+    t.needsUpdate = true;
+    return t;
+  }, [text]);
+  if (!texture) return null;
+  // On the +Z body face, facing +Z, sized to the bottle body.
+  return (
+    <mesh position={[0, 0, 0.34]}>
+      <planeGeometry args={[0.5, 0.16]} />
+      <meshBasicMaterial map={texture} transparent depthWrite={false} />
+    </mesh>
+  );
+}
+
+function ProceduralBottle({ letter, onReady }: { letter: PeakLetter; onReady: HeroBottleProps['onReady'] }) {
+  const ref = useRef<Group>(null);
+  const geometry = useMemo(() => heroBottleGeometry(), []);
+  const material = useMemo(() => createGlassMaterial(), []);
+  const drug = useMemo(() => drugFor(letter), [letter]);
+  const { onPointerOver, onPointerOut } = useHoverToRead();
+  useEffect(() => { if (ref.current) onReady(letter, ref.current); }, [letter, onReady]);
+  return (
+    <group
+      ref={ref}
+      rotation={[RESTING_TILT, 0, 0]}
+      onPointerOver={(e) => { e.stopPropagation(); if (ref.current) onPointerOver(ref.current); }}
+      onPointerOut={(e) => { e.stopPropagation(); if (ref.current) onPointerOut(ref.current); }}
+    >
+      <mesh geometry={geometry} material={material} />
+      <BottleLabel text={drug} />
+    </group>
+  );
+}
+
+function GlbBottle({ letter, path, onReady }: { letter: PeakLetter; path: string; onReady: HeroBottleProps['onReady'] }) {
+  const { scene } = useGLTF(path) as unknown as { scene: Group };
+  const ref = useRef<Group>(null);
+  const { onPointerOver, onPointerOut } = useHoverToRead();
+  useEffect(() => { if (ref.current) onReady(letter, ref.current); }, [letter, onReady]);
+  // Real GLB carries its own label; we only apply the resting tilt + hover handlers.
+  return (
+    <group
+      ref={ref}
+      rotation={[RESTING_TILT, 0, 0]}
+      onPointerOver={(e) => { e.stopPropagation(); if (ref.current) onPointerOver(ref.current); }}
+      onPointerOut={(e) => { e.stopPropagation(); if (ref.current) onPointerOut(ref.current); }}
+    >
+      <primitive object={scene} />
+    </group>
+  );
+}
+```
+
+(c) **The outer HeroBottle group drifts** (the bug fix), with the tilt happening on the inner group above:
 ```tsx
 export function HeroBottle({ letter, position, onReady }: HeroBottleProps) {
   const status = useAssetPresence(GLB_PATH[letter]);
   const groupRef = useRef<Group>(null);
-  // Stable per-letter phase so each PEAK bottle desyncs from the others.
   const phase = useMemo(() => ({ P: 0.12, E: 0.41, A: 0.68, K: 0.91 }[letter]), [letter]);
 
   useFrame(({ clock }) => {
@@ -262,13 +427,14 @@ export function HeroBottle({ letter, position, onReady }: HeroBottleProps) {
     if (!g) return;
     const d = driftOffset(clock.elapsedTime, phase);
     g.position.set(position[0] + d.x, position[1] + d.y, position[2] + d.z);
-    g.rotation.set(d.rotX, d.rotY * 0.5, d.rotZ);
+    // Small drift on Y/Z only — never on X, so it can't fight the hover tilt's X axis.
+    g.rotation.set(0, d.rotY * 0.5, d.rotZ);
   });
 
   const procedural = <ProceduralBottle letter={letter} onReady={onReady} />;
 
   return (
-    <group ref={groupRef} position={position}>
+    <group ref={groupRef} position={position} scale={0.5}>
       {shouldRenderGlb(status) ? (
         <GlbErrorBoundary fallback={procedural}>
           <Suspense fallback={procedural}>
@@ -282,20 +448,22 @@ export function HeroBottle({ letter, position, onReady }: HeroBottleProps) {
   );
 }
 ```
-Ensure `useMemo`, `useRef`, and `Group` are imported (add `Group` to the `three` type import; `useMemo` to the react import). The hover-rotation on the inner mesh (the `rotation={[0, RESTING_LABEL_AWAY, 0]}` + pointer handlers from Task 20) stays as-is — it rotates the inner mesh while the outer group drifts.
+Notes: the outer drift group deliberately leaves **X rotation at 0** so it never competes with the inner
+hover tilt (which animates the inner group's `rotation.x`). The `scale={0.5}` folds in the Task-4 PEAK
+shrink (so Task 4 Step 4 no longer needs to re-add it). Remove any remaining `RESTING_LABEL_AWAY` import.
 
-- [ ] **Step 7: Verify tests + build**
+- [ ] **Step 11: Verify tests + build (incl. readability mechanic + contract)**
 
-Run: `npx vitest run components/hero/objects/useAmbientDrift.test.ts components/hero/objects/FieldObjects.test.tsx components/hero/objects/HeroBottles.test.tsx`
-Expected: all PASS (drift unit test, field render-smoke, **PEAK contract still green**).
+Run: `npx vitest run components/hero/objects/useAmbientDrift.test.ts components/hero/useHoverToRead.test.ts components/hero/objects/FieldObjects.test.tsx components/hero/objects/HeroBottles.test.tsx`
+Expected: all PASS — drift bounded, **`labelUpComponent(READ_TILT)≈1`** (label faces the top-down camera on hover) and `≈0` at rest, field render-smoke, and the **PEAK contract still green** (registry now holds the tilting group; `userData` tags intact).
 Run: `timeout 200 npm run build 2>&1 | tail -8`
 Expected: zero errors.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 12: Commit**
 
 ```bash
 git add -A
-git commit -m "fix: PEAK bottles drift like the field; unify rise+drift model"
+git commit -m "fix: PEAK bottles drift + tilt-to-read for the top-down camera (with real labels)"
 ```
 
 ---
@@ -406,7 +574,7 @@ const POSITIONS: Record<PeakLetter, [number, number, number]> = {
   K: [6.0, 0.1, 3.5],
 };
 ```
-Also shrink them to match the field — in `HeroBottle.tsx`'s wrapping `<group>`, add `scale={0.5}` (tunable) so the PEAK bottles read at surface scale while staying a touch larger than the field for legibility on hover.
+The PEAK shrink (`scale={0.5}` on the wrapping group) is **already applied in Task 2 Step 10c** — do not re-add it here; just confirm the four read at surface scale (a touch larger than the field for hover legibility) and adjust the `0.5` if needed.
 
 - [ ] **Step 5: Bubbles rise toward the surface — `Bubbles.tsx`**
 
@@ -1221,7 +1389,9 @@ Confirm Leva still absent from prod: `grep -roE "useControls|LevaPanel|levaStore
 - [ ] Light sweep travels across the surface; caustics shimmer below.
 - [ ] A few open bottles leaking pills; the distant tanker is visible pouring in.
 - [ ] Copy: "Hello," / "We are The Redwood Co." / "We are a " + typewriter delete-retype cycling with caret.
-- [ ] Hover a PEAK bottle → rotates to read on top of its drift; leaving → drifts back.
+- [ ] Hover a PEAK bottle → it **tips toward you** (tilts ~90° about a horizontal axis) so its drug-name
+  label lifts up and is **actually legible** to the top-down camera (confirm you can read the text, not just
+  that it moves); leaving → it settles back upright with the label hidden — all on top of the ambient drift.
 - [ ] Join Us → Discord; Apply Now disabled; audio toggle silent until clicked, never autoplays.
 Tune constants (camera height, wave amplitude/speed, counts, drift magnitude, scale) live until it reads right; copy final values into the component defaults. Stop the dev server before building.
 
@@ -1248,7 +1418,9 @@ Confirm clean tree on `staging` (`git status`, `git log --oneline -8`), then tel
 
 # Self-Review (completed by plan author)
 
-**Spec coverage (spec § → task):** copy fix §9.2 → T1; PEAK drift §7.1 → T2; perf §13 → T3,T11; top-down camera/spread/fog §6.1/6.3/6.4 → T4; light sweep/caustics §6.5/6.6 → T5; wave surface §6.6 → T6; cursor displacement §6.7/§10.1 → T7; typewriter §9.2 → T8; open bottles §6.9 → T9; tanker §6.11/§8 → T10; verification §16 + changelog §17 → T11. Submerged/scroll-dive §11–§12 correctly **excluded** (Phase 3).
+**Spec coverage (spec § → task):** copy fix §9.2 → T1; PEAK drift §7.1 → T2; **hover-to-read re-oriented for the top-down camera (tilt-to-read about X) + real labels §10.2 → T2 (verified T11)**; perf §13 → T3,T11; top-down camera/spread/fog §6.1/6.3/6.4 → T4; light sweep/caustics §6.5/6.6 → T5; wave surface §6.6 → T6; cursor displacement §6.7/§10.1 → T7; typewriter §9.2 → T8; open bottles §6.9 → T9; tanker §6.11/§8 → T10; verification §16 + changelog §17 → T11. Submerged/scroll-dive §11–§12 correctly **excluded** (Phase 3).
+
+**Hover-axis correctness:** the top-down camera looks down −Y, so the old Y-axis "face the camera" spin is invisible (rotating about the view axis). T2 replaces it with a tilt about X (`READ_TILT = -π/2`) that lifts the +Z label face to point at the camera; `labelUpComponent` makes this assertable (`≈1` on hover, `≈0` at rest). A real CanvasTexture label is added (degrades to null under jsdom). The outer drift group leaves X at 0 so it can't fight the hover tilt.
 
 **Placeholder scan:** none. Pending external assets (tanker/PEAK GLBs, audio) ride the real swap-seam/graceful-silence; not placeholders.
 
