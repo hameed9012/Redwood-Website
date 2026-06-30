@@ -39,4 +39,9 @@ describe('qualityFor', () => {
       expect(qualityFor(t).heroBottlesPresent).toBe(true);
     });
   });
+
+  it('exposes a positive openBottleCount that scales with tier', () => {
+    expect(qualityFor('high').openBottleCount).toBeGreaterThan(0);
+    expect(qualityFor('high').openBottleCount).toBeGreaterThanOrEqual(qualityFor('low').openBottleCount);
+  });
 });

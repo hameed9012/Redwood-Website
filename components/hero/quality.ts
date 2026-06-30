@@ -12,6 +12,7 @@ export interface QualityProfile {
   maxDpr: number;
   bottleCount: number;
   bubbleCount: number;
+  openBottleCount: number;
   postprocessing: boolean;
   caustics: boolean;
   hdriPath: string;
@@ -35,11 +36,11 @@ export function qualityFor(tier: Tier): QualityProfile {
   const base = { heroBottlesPresent: true };
   switch (tier) {
     case 'low':
-      return { ...base, maxDpr: 1, bottleCount: 10, bubbleCount: 20, postprocessing: false, caustics: false, hdriPath: '/hdri/dark-studio-low.hdr' };
+      return { ...base, maxDpr: 1, bottleCount: 10, bubbleCount: 20, openBottleCount: 1, postprocessing: false, caustics: false, hdriPath: '/hdri/dark-studio-low.hdr' };
     case 'mid':
-      return { ...base, maxDpr: 1.5, bottleCount: 22, bubbleCount: 50, postprocessing: true, caustics: true, hdriPath: '/hdri/dark-studio-low.hdr' };
+      return { ...base, maxDpr: 1.5, bottleCount: 22, bubbleCount: 50, openBottleCount: 2, postprocessing: true, caustics: true, hdriPath: '/hdri/dark-studio-low.hdr' };
     case 'high':
-      return { ...base, maxDpr: 2, bottleCount: 38, bubbleCount: 90, postprocessing: true, caustics: true, hdriPath: '/hdri/dark-studio.hdr' };
+      return { ...base, maxDpr: 2, bottleCount: 38, bubbleCount: 90, openBottleCount: 4, postprocessing: true, caustics: true, hdriPath: '/hdri/dark-studio.hdr' };
   }
 }
 

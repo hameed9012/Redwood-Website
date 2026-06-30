@@ -5,6 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import type { DirectionalLight } from 'three';
 import { FieldObjects } from './objects/FieldObjects';
 import { HeroBottles } from './objects/HeroBottles';
+import { OpenBottle } from './objects/OpenBottle';
 import { Bubbles } from './Bubbles';
 import { CausticsPlane } from './CausticsPlane';
 import { BackgroundLogo } from './BackgroundLogo';
@@ -63,6 +64,9 @@ export function TankScene({ registry, quality }: TankSceneProps) {
       <FieldObjects count={quality.bottleCount} pushFrom={cut} />
       <HeroBottles registry={registry} pushFrom={cut} />
       <Bubbles count={quality.bubbleCount} />
+      {Array.from({ length: quality.openBottleCount }).map((_, i) => (
+        <OpenBottle key={i} seed={i + 1} position={[(i - 1.5) * 6, 0, (i % 2 ? 4 : -4)]} />
+      ))}
     </>
   );
 }
