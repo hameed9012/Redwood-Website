@@ -1,7 +1,7 @@
 'use client';
 
-import { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useEffect, useRef } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
 import type { DirectionalLight } from 'three';
 import { FieldObjects } from './objects/FieldObjects';
 import { HeroBottles } from './objects/HeroBottles';
@@ -21,6 +21,12 @@ export function TankScene({ registry, quality }: TankSceneProps) {
   const sweep = useRef<DirectionalLight>(null);
   useCameraBreathing();
 
+  const { camera } = useThree();
+  useEffect(() => {
+    camera.up.set(0, 0, -1);
+    camera.lookAt(0, 0, 0);
+  }, [camera]);
+
   // Slow cold light sweep on a 20–30s cycle (spec §6.5).
   useFrame(({ clock }) => {
     if (sweep.current) {
@@ -34,7 +40,7 @@ export function TankScene({ registry, quality }: TankSceneProps) {
     <>
       <color attach="background" args={['#050a0c']} />
       {/* Depth fog scoped to the tank (spec §6.4). */}
-      <fogExp2 attach="fog" args={['#0a1518', 0.085]} />
+      <fogExp2 attach="fog" args={['#0a1518', 0.05]} />
 
       <ambientLight intensity={0.45} color="#9bbdb9" />
       {/* Bright cold key that sweeps — gives the glass highlights + refraction flare. */}

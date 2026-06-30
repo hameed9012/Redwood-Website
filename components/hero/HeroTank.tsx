@@ -33,7 +33,7 @@ export function HeroTank() {
     <Canvas
       className="absolute inset-0"
       dpr={[1, quality.maxDpr]}
-      camera={{ position: [0, 0, 6], fov: 50 }}
+      camera={{ position: [0, 16, 0.001], fov: 50, near: 0.1, far: 60 }}
       gl={{ antialias: true, alpha: false }}
     >
       <Environment files={quality.hdriPath} environmentIntensity={1.8} />

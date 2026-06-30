@@ -11,10 +11,10 @@ interface HeroBottlesProps {
 
 /** Fixed resting positions for the four PEAK bottles in the foreground. */
 const POSITIONS: Record<PeakLetter, [number, number, number]> = {
-  P: [-2.4, -0.5, 1.5],
-  E: [-0.8, 0.3, 1.2],
-  A: [0.8, -0.3, 1.4],
-  K: [2.4, 0.5, 1.1],
+  P: [-6.5, 0.1, -4.0],
+  E: [5.5, 0.0, -6.5],
+  A: [-4.0, 0.05, 5.5],
+  K: [6.0, 0.1, 3.5],
 };
 
 export function HeroBottles({ registry }: HeroBottlesProps) {

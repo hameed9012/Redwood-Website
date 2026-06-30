@@ -28,16 +28,16 @@ function mulberry32(seed: number) {
 export function FieldObjects({ count, seed = 1337 }: FieldObjectsProps) {
   const bottleGeo = useMemo(() => fieldBottleGeometry(), []);
   const syringeGeo = useMemo(() => syringeGeometry(), []);
-  const material = useMemo(() => createGlassMaterial(), []);
+  const material = useMemo(() => createGlassMaterial({ cheap: true }), []);
 
   const items = useMemo(() => {
     const rand = mulberry32(seed);
     return Array.from({ length: count }, (_, i) => ({
       key: i,
       isSyringe: rand() > 0.7,
-      rest: [(rand() - 0.5) * 8, (rand() - 0.5) * 6, -1 - rand() * 12] as [number, number, number],
+      rest: [(rand() - 0.5) * 22, -rand() * 3, (rand() - 0.5) * 22] as [number, number, number],
       baseRot: [rand() * Math.PI, rand() * Math.PI, rand() * Math.PI] as [number, number, number],
-      scale: 0.6 + rand() * 0.8,
+      scale: 0.28 + rand() * 0.34,
       phase: rand(),
     }));
   }, [count, seed]);

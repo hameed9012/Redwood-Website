@@ -20,7 +20,7 @@ export function BackgroundLogo() {
   });
 
   return (
-    <group ref={ref} name="background-logo" position={[0, 0, -14]} scale={8}>
+    <group ref={ref} name="background-logo" position={[0, -10, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={8}>
       <mesh>
         <planeGeometry args={[2, 2]} />
         <meshBasicMaterial color="#7a1518" transparent opacity={0.06} />

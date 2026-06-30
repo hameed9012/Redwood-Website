@@ -15,9 +15,9 @@ export function Bubbles({ count }: BubblesProps) {
     const positions = new Float32Array(count * 3);
     const speeds = new Float32Array(count);
     for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 10;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 8;
-      positions[i * 3 + 2] = -1 - Math.random() * 10;
+      positions[i * 3] = (Math.random() - 0.5) * 22;
+      positions[i * 3 + 1] = -6 + Math.random() * 6;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 22;
       speeds[i] = 0.15 + Math.random() * 0.4;
     }
     const geometry = new BufferGeometry();
@@ -36,7 +36,7 @@ export function Bubbles({ count }: BubblesProps) {
     const pos = geometry.getAttribute('position') as Float32BufferAttribute;
     for (let i = 0; i < count; i++) {
       let y = pos.getY(i) + speeds[i] * delta;
-      if (y > 4) y = -4; // recycle to the bottom
+      if (y > 0.5) y = -6; // recycle to below the surface
       pos.setY(i, y);
     }
     pos.needsUpdate = true;
