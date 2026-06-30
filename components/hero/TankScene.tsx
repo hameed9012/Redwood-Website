@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { DirectionalLight } from 'three';
 import { FieldObjects } from './objects/FieldObjects';
@@ -9,6 +9,8 @@ import { Bubbles } from './Bubbles';
 import { CausticsPlane } from './CausticsPlane';
 import { BackgroundLogo } from './BackgroundLogo';
 import { WaterSurface } from './surface/WaterSurface';
+import type { WaterSurfaceHandle } from './surface/WaterSurface';
+import { useSurfaceCursor } from './surface/useSurfaceCursor';
 import { useCameraBreathing } from './useCameraBreathing';
 import type { PeakRegistry } from './peak';
 import type { QualityProfile } from './quality';
@@ -21,6 +23,10 @@ interface TankSceneProps {
 export function TankScene({ registry, quality }: TankSceneProps) {
   const sweep = useRef<DirectionalLight>(null);
   useCameraBreathing();
+
+  const [surface, setSurface] = useState<WaterSurfaceHandle | null>(null);
+  const cut = useRef<{ x: number; z: number; strength: number; t: number }>({ x: 0, z: 0, strength: 0, t: 0 });
+  useSurfaceCursor(surface, (x, z, strength) => { cut.current = { x, z, strength, t: performance.now() }; });
 
   const { camera } = useThree();
   useEffect(() => {
@@ -52,10 +58,10 @@ export function TankScene({ registry, quality }: TankSceneProps) {
       <directionalLight position={[-4, 2, 5]} intensity={1.1} color="#8fbfc7" />
 
       {quality.caustics && <CausticsPlane intensity={0.45} />}
-      <WaterSurface />
+      <WaterSurface onReady={setSurface} />
       <BackgroundLogo />
-      <FieldObjects count={quality.bottleCount} />
-      <HeroBottles registry={registry} />
+      <FieldObjects count={quality.bottleCount} pushFrom={cut} />
+      <HeroBottles registry={registry} pushFrom={cut} />
       <Bubbles count={quality.bubbleCount} />
     </>
   );

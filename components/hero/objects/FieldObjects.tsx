@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
+import type { MutableRefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group, Mesh } from 'three';
 import gsap from 'gsap';
@@ -13,6 +14,7 @@ interface FieldObjectsProps {
   count: number;
   /** Deterministic seed so SSR/CSR agree; defaults to a fixed value. */
   seed?: number;
+  pushFrom?: MutableRefObject<{ x: number; z: number; strength: number; t: number }>;
 }
 
 function mulberry32(seed: number) {
@@ -25,7 +27,7 @@ function mulberry32(seed: number) {
   };
 }
 
-export function FieldObjects({ count, seed = 1337 }: FieldObjectsProps) {
+export function FieldObjects({ count, seed = 1337, pushFrom }: FieldObjectsProps) {
   const bottleGeo = useMemo(() => fieldBottleGeometry(), []);
   const syringeGeo = useMemo(() => syringeGeometry(), []);
   const material = useMemo(() => createGlassMaterial({ cheap: true }), []);
@@ -73,6 +75,19 @@ export function FieldObjects({ count, seed = 1337 }: FieldObjectsProps) {
       const e = enter.current[i] ?? 0;
       child.position.set(it.rest[0] + d.x, it.rest[1] + e + d.y, it.rest[2] + d.z);
       child.rotation.set(it.baseRot[0] + d.rotX, it.baseRot[1] + d.rotY, it.baseRot[2] + d.rotZ);
+      const c = pushFrom?.current;
+      if (c) {
+        const age = (performance.now() - c.t) / 1000;
+        if (age < 1.2) {
+          const dx = child.position.x - c.x, dz = child.position.z - c.z;
+          const dist = Math.hypot(dx, dz);
+          if (dist < 6) {
+            const push = (1 - dist / 6) * c.strength * (1 - age / 1.2) * 1.5;
+            child.position.x += (dx / (dist || 1)) * push;
+            child.position.z += (dz / (dist || 1)) * push;
+          }
+        }
+      }
     }
   });
 
