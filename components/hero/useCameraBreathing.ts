@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 
 export interface BreathOffset {
@@ -19,14 +20,22 @@ export function breathingOffset(t: number): BreathOffset {
   };
 }
 
-export function useCameraBreathing() {
+/**
+ * Gentle suspended-in-liquid drift for the TOP-DOWN camera. Applies small
+ * POSITION offsets around the camera's mount position and re-aims at `target`
+ * every frame (keeping the straight-down look + stable screen-up). It must NOT
+ * write camera.rotation directly — that would clobber the look-down orientation
+ * and point the camera at the horizon (scene goes black).
+ */
+export function useCameraBreathing(target: [number, number, number] = [0, 0, 0]) {
   const { camera } = useThree();
-  const base = { x: camera.position.x, y: camera.position.y };
+  const base = useRef({ x: camera.position.x, y: camera.position.y, z: camera.position.z });
   useFrame(({ clock }) => {
     const o = breathingOffset(clock.elapsedTime);
-    camera.position.x = base.x + o.x;
-    camera.position.y = base.y + o.y;
-    camera.rotation.x = o.rotX;
-    camera.rotation.y = o.rotY;
+    camera.position.x = base.current.x + o.x;
+    camera.position.z = base.current.z + o.y * 0.5;
+    camera.position.y = base.current.y + o.rotX * 3; // tiny height bob
+    camera.up.set(0, 0, -1);
+    camera.lookAt(target[0], target[1], target[2]);
   });
 }
