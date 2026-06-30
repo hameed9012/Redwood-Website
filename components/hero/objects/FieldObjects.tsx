@@ -1,14 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
-import type { MutableRefObject } from 'react';
+import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group, Mesh } from 'three';
 import gsap from 'gsap';
 import { fieldBottleGeometry, syringeGeometry } from './proceduralBottleGeo';
 import { createGlassMaterial } from './glassMaterial';
 import { buildRiseSchedule } from '../useIntroRise';
-import { driftOffset } from './useAmbientDrift';
+import { makeFloater, stepFloater, type Cut } from '../surface/waterField';
 
 interface FieldObjectsProps {
   count: number;
@@ -16,6 +15,8 @@ interface FieldObjectsProps {
   seed?: number;
   pushFrom?: MutableRefObject<{ x: number; z: number; strength: number; t: number }>;
 }
+
+const BOUNDS = { x: 12, z: 12 };
 
 function mulberry32(seed: number) {
   return () => {
@@ -37,65 +38,53 @@ export function FieldObjects({ count, seed = 1337, pushFrom }: FieldObjectsProps
     return Array.from({ length: count }, (_, i) => ({
       key: i,
       isSyringe: rand() > 0.7,
-      rest: [(rand() - 0.5) * 22, -rand() * 3, (rand() - 0.5) * 22] as [number, number, number],
-      baseRot: [rand() * Math.PI, rand() * Math.PI, rand() * Math.PI] as [number, number, number],
       scale: 0.28 + rand() * 0.34,
-      phase: rand(),
+      // slow independent tumble so each object rolls a little on the water
+      spinXAmp: 0.25 + rand() * 0.3,
+      spinZAmp: 0.25 + rand() * 0.3,
+      spinXFreq: 0.2 + rand() * 0.3,
+      spinZFreq: 0.2 + rand() * 0.3,
+      yawSpeed: (rand() - 0.5) * 0.25,
+      floater: makeFloater(rand, BOUNDS),
     }));
   }, [count, seed]);
 
   const groupRef = useRef<Group>(null);
-  const enter = useRef<number[]>([]);
 
+  // Staggered intro rise: each object lifts from below the surface up to it, then free-floats.
   useEffect(() => {
-    enter.current = items.map(() => -10);
     const schedule = buildRiseSchedule(items.length, seed);
-    const tweens = schedule.map((cfg, i) => {
-      const o = { v: -10 };
-      const tl = gsap.timeline({ delay: cfg.startDelay });
-      if (cfg.pauseMidway) {
-        tl.to(o, { v: -4, duration: cfg.duration * 0.4, ease: 'sine.out', onUpdate: () => (enter.current[i] = o.v) })
-          .to(o, { v: 0, duration: cfg.duration * 0.6, ease: 'sine.inOut', delay: 0.6, onUpdate: () => (enter.current[i] = o.v) });
-      } else {
-        tl.to(o, { v: 0, duration: cfg.duration, ease: 'sine.inOut', onUpdate: () => (enter.current[i] = o.v) });
-      }
-      return tl;
+    const tweens = items.map((it, i) => {
+      it.floater.enterY = -8;
+      const cfg = schedule[i];
+      return gsap.to(it.floater, { enterY: 0, duration: cfg.duration, delay: cfg.startDelay, ease: 'sine.out' });
     });
     return () => tweens.forEach((t) => t.kill());
   }, [items, seed]);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     const g = groupRef.current;
     if (!g) return;
     const t = clock.elapsedTime;
+    const raw = pushFrom?.current;
+    const cut: Cut | null = raw && raw.t > 0 ? raw : null;
     for (let i = 0; i < g.children.length; i++) {
       const child = g.children[i] as Mesh;
       const it = items[i];
-      const d = driftOffset(t, it.phase);
-      const e = enter.current[i] ?? 0;
-      child.position.set(it.rest[0] + d.x, it.rest[1] + e + d.y, it.rest[2] + d.z);
-      child.rotation.set(it.baseRot[0] + d.rotX, it.baseRot[1] + d.rotY, it.baseRot[2] + d.rotZ);
-      const c = pushFrom?.current;
-      if (c) {
-        const age = (performance.now() - c.t) / 1000;
-        if (age < 1.2) {
-          const dx = child.position.x - c.x, dz = child.position.z - c.z;
-          const dist = Math.hypot(dx, dz);
-          if (dist < 6) {
-            const push = (1 - dist / 6) * c.strength * (1 - age / 1.2) * 1.5;
-            child.position.x += (dx / (dist || 1)) * push;
-            child.position.z += (dz / (dist || 1)) * push;
-          }
-        }
-      }
+      const tr = stepFloater(it.floater, t, delta, cut, BOUNDS);
+      child.position.set(tr.x, tr.y, tr.z);
+      child.rotation.set(
+        tr.tiltX + Math.sin(t * it.spinXFreq + it.floater.spinPhase) * it.spinXAmp,
+        it.floater.spinPhase + t * it.yawSpeed,
+        tr.tiltZ + Math.cos(t * it.spinZFreq + it.floater.spinPhase) * it.spinZAmp,
+      );
     }
   });
 
   return (
     <group ref={groupRef}>
       {items.map((it) => (
-        <mesh key={it.key} geometry={it.isSyringe ? syringeGeo : bottleGeo} material={material}
-          position={it.rest} rotation={it.baseRot} scale={it.scale} />
+        <mesh key={it.key} geometry={it.isSyringe ? syringeGeo : bottleGeo} material={material} scale={it.scale} />
       ))}
     </group>
   );

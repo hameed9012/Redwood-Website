@@ -9,7 +9,7 @@ import { heroBottleGeometry } from './proceduralBottleGeo';
 import { createGlassMaterial } from './glassMaterial';
 import { useAssetPresence, shouldRenderGlb } from './useOptionalGLTF';
 import { useHoverToRead, RESTING_TILT } from '../useHoverToRead';
-import { driftOffset } from './useAmbientDrift';
+import { stepFloater, type Floater, type Cut } from '../surface/waterField';
 import { drugFor, type PeakLetter } from '../peak';
 
 interface HeroBottleProps {
@@ -99,30 +99,39 @@ function GlbBottle({ letter, path, onReady }: { letter: PeakLetter; path: string
   );
 }
 
+// PEAK bottles float more centrally than the field so they stay findable.
+const PEAK_BOUNDS = { x: 9, z: 9 };
+
 export function HeroBottle({ letter, position, onReady, pushFrom }: HeroBottleProps) {
   const status = useAssetPresence(GLB_PATH[letter]);
   const groupRef = useRef<Group>(null);
   const phase = useMemo(() => ({ P: 0.12, E: 0.41, A: 0.68, K: 0.91 }[letter]), [letter]);
 
-  useFrame(({ clock }) => {
+  // Free-floats like everything else, but starts at its seeded position and never
+  // spins on Y — so the hover tilt reliably brings its label up to the camera.
+  const floater = useMemo<Floater>(
+    () => ({
+      x: position[0],
+      z: position[2],
+      vx: (phase - 0.5) * 0.4,
+      vz: (0.5 - phase) * 0.4,
+      enterY: 0,
+      spinPhase: phase * 6.2831853,
+      lastCut: 0,
+    }),
+    // position/phase are stable per letter
+    [letter], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  useFrame(({ clock }, delta) => {
     const g = groupRef.current;
     if (!g) return;
-    const d = driftOffset(clock.elapsedTime, phase);
-    g.position.set(position[0] + d.x, position[1] + d.y, position[2] + d.z);
-    g.rotation.set(0, d.rotY * 0.5, d.rotZ); // X left at 0 so drift never fights the hover tilt
-    const c = pushFrom?.current;
-    if (c) {
-      const age = (performance.now() - c.t) / 1000;
-      if (age < 1.2) {
-        const dx = g.position.x - c.x, dz = g.position.z - c.z;
-        const dist = Math.hypot(dx, dz);
-        if (dist < 6) {
-          const push = (1 - dist / 6) * c.strength * (1 - age / 1.2) * 1.5;
-          g.position.x += (dx / (dist || 1)) * push;
-          g.position.z += (dz / (dist || 1)) * push;
-        }
-      }
-    }
+    const raw = pushFrom?.current;
+    const cut: Cut | null = raw && raw.t > 0 ? raw : null;
+    const tr = stepFloater(floater, clock.elapsedTime, delta, cut, PEAK_BOUNDS);
+    g.position.set(tr.x, tr.y, tr.z);
+    // Gentle roll on Z only; X + yaw stay 0 so the hover tilt (inner group) reads cleanly.
+    g.rotation.set(0, 0, tr.tiltZ * 0.6);
   });
 
   const procedural = <ProceduralBottle letter={letter} onReady={onReady} />;
