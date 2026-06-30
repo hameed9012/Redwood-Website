@@ -9,6 +9,7 @@ import { OpenBottle } from './objects/OpenBottle';
 import { Bubbles } from './Bubbles';
 import { CausticsPlane } from './CausticsPlane';
 import { BackgroundLogo } from './BackgroundLogo';
+import { Tanker } from './scenery/Tanker';
 import { WaterSurface } from './surface/WaterSurface';
 import type { WaterSurfaceHandle } from './surface/WaterSurface';
 import { useSurfaceCursor } from './surface/useSurfaceCursor';
@@ -67,6 +68,7 @@ export function TankScene({ registry, quality }: TankSceneProps) {
       {Array.from({ length: quality.openBottleCount }).map((_, i) => (
         <OpenBottle key={i} seed={i + 1} position={[(i - 1.5) * 6, 0, (i % 2 ? 4 : -4)]} />
       ))}
+      <Tanker />
     </>
   );
 }
