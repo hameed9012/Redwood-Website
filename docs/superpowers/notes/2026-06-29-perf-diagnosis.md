@@ -42,3 +42,17 @@ decision (fidelity vs. framerate) — raised with the user rather than changed s
 - The concrete material-split + count/postprocessing tuning is applied during the rework / **R2-11**, once
   the final top-down scene exists, and gated by the user's fidelity-vs-perf decision.
 - **Re-measure at R2-11** on the final scene (target: ≥40 FPS at mid tier on this iGPU).
+
+## R2-11 follow-up (final scene)
+- Cheap field glass alone barely moved FPS (~15→17) → field transmission was **not** the main cost.
+- **Isolation test:** shrinking the viewport to ~1/5 the pixels took FPS **~16 → 50** → the scene is
+  **fill-rate / fragment bound**, not geometry/draw-call bound. The full-screen postprocessing passes over
+  a ~1920px canvas dominate.
+- **Applied (profiling-driven, not blind):** dropped **DepthOfField + ChromaticAberration** (the two most
+  expensive full-screen passes; kept bloom+vignette); **capped dpr** (high 2→1.25, mid 1.5→1); trimmed
+  per-tier counts; field uses cheap glass; PEAK keeps real transmission.
+- **Caveat:** headless Chromium FPS here is noisy (the window/dpr varied between runs: 1920@dpr1 vs
+  2560@dpr0.75), so absolute numbers aren't authoritative. The decisive check is on the user's real
+  desktop Chrome at their native resolution/dpr — the fixes (esp. the dpr cap) bite hardest there.
+- **If still heavy on the real machine, next levers (in order):** reduce the water plane's screen coverage
+  / subdivision, lower the caustics plane resolution, drop bloom, or force the `low` tier on integrated GPUs.
