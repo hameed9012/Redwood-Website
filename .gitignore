@@ -48,3 +48,4 @@ build.log
 .playwright-mcp/
 smoke-*.png
 devserver.log
+prodserver.log
