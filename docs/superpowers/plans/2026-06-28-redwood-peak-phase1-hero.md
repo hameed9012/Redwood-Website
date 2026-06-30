@@ -861,19 +861,16 @@ The seam (spec §8): try to load a `.glb`; fall back to procedural when absent �
 Create `components/hero/objects/useOptionalGLTF.test.ts`:
 ```ts
 import { describe, it, expect } from 'vitest';
-import { resolveGeometrySource } from './useOptionalGLTF';
+import { shouldRenderGlb } from './useOptionalGLTF';
 
-describe('resolveGeometrySource', () => {
-  it('uses the GLB scene when one loaded', () => {
-    const fakeScene = { type: 'Group' } as any;
-    const r = resolveGeometrySource(fakeScene);
-    expect(r.kind).toBe('glb');
-    expect(r.scene).toBe(fakeScene);
+describe('shouldRenderGlb', () => {
+  it('attempts GLB only when the probe confirms the file is present', () => {
+    expect(shouldRenderGlb('present')).toBe(true);
   });
 
-  it('falls back to procedural when no GLB is available', () => {
-    const r = resolveGeometrySource(null);
-    expect(r.kind).toBe('procedural');
+  it('falls back to procedural when absent or still pending', () => {
+    expect(shouldRenderGlb('absent')).toBe(false);
+    expect(shouldRenderGlb('pending')).toBe(false);
   });
 });
 ```
@@ -889,57 +886,47 @@ Expected: FAIL — cannot find `./useOptionalGLTF`.
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useGLTF } from '@react-three/drei';
-import type { Group } from 'three';
 
-export type GeometrySource =
-  | { kind: 'glb'; scene: Group }
-  | { kind: 'procedural' };
+export type AssetStatus = 'pending' | 'present' | 'absent';
 
-/** Pure decision: GLB scene if present, else procedural. Unit-tested. */
-export function resolveGeometrySource(scene: Group | null): GeometrySource {
-  return scene ? { kind: 'glb', scene } : { kind: 'procedural' };
+/** Pure decision: attempt GLB rendering only when the probe confirms presence. Unit-tested. */
+export function shouldRenderGlb(status: AssetStatus): boolean {
+  return status === 'present';
 }
 
 /**
- * Attempts to load a GLB at `path`. Returns the resolved source.
- * On any load error (e.g. file not present yet) it silently returns
- * the procedural fallback — so dropping a real .glb in later "just works"
- * with zero changes elsewhere (spec §8 acceptance).
+ * Probes (HTTP HEAD) whether a GLB exists at `path` without ever throwing.
+ * Returns 'pending' until the probe resolves, then 'present' | 'absent'.
+ *
+ * This is the swap-seam (spec §8): `useGLTF` suspends/throws on a missing
+ * file, so we must NOT call it until we know the file is there. The probe
+ * lets HeroBottle render procedural immediately and only mount the
+ * GLB-loading child (inside Suspense + an ErrorBoundary) once the file is
+ * confirmed present — so a missing model silently falls back to procedural,
+ * and dropping a real .glb in later "just works" with zero edits elsewhere.
  */
-export function useOptionalGLTF(path: string): GeometrySource {
-  const [scene, setScene] = useState<Group | null>(null);
+export function useAssetPresence(path: string): AssetStatus {
+  const [status, setStatus] = useState<AssetStatus>('pending');
 
   useEffect(() => {
     let cancelled = false;
-    // Probe first so a 404 doesn't throw inside Suspense.
     fetch(path, { method: 'HEAD' })
       .then((res) => {
-        if (!res.ok) return;
-        return useGLTF.preload(path);
-      })
-      .then(() => {
-        if (cancelled) return;
-        try {
-          const gltf = useGLTF(path) as unknown as { scene: Group };
-          if (gltf?.scene) setScene(gltf.scene);
-        } catch {
-          /* keep procedural */
-        }
+        if (!cancelled) setStatus(res.ok ? 'present' : 'absent');
       })
       .catch(() => {
-        /* keep procedural */
+        if (!cancelled) setStatus('absent');
       });
     return () => {
       cancelled = true;
     };
   }, [path]);
 
-  return resolveGeometrySource(scene);
+  return status;
 }
 ```
 
-Note: `useGLTF` outside Suspense is used here only via the guarded path-exists branch; the procedural fallback is the default render so the component never suspends on a missing file. The HeroBottle component (Task 13) renders procedural geometry immediately and swaps when `kind === 'glb'`.
+Note: `useGLTF` is intentionally NOT called here — calling it inside a promise/effect is an invalid hook call. It is called at the top level of the `GlbBottle` child in Task 13, which only mounts when `shouldRenderGlb(status)` is true, wrapped in Suspense + an ErrorBoundary whose fallback is the procedural bottle. The procedural bottle renders immediately for `pending`/`absent`, so the scene never suspends on a missing file and the PEAK tagging fires at t0.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -1302,18 +1289,18 @@ Expected: FAIL — cannot find `./HeroBottles`.
 ```tsx
 'use client';
 
-import { useRef, useEffect } from 'react';
-import type { Mesh, Object3D } from 'three';
+import { useRef, useEffect, Suspense, Component, type ReactNode } from 'react';
+import type { Mesh, Object3D, Group } from 'three';
+import { useGLTF } from '@react-three/drei';
 import { heroBottleGeometry } from './proceduralBottleGeo';
 import { createGlassMaterial } from './glassMaterial';
-import { useOptionalGLTF } from './useOptionalGLTF';
+import { useAssetPresence, shouldRenderGlb } from './useOptionalGLTF';
 import type { PeakLetter } from '../peak';
 
 interface HeroBottleProps {
   letter: PeakLetter;
-  drug: string;
   position: [number, number, number];
-  /** Called once with the root Object3D so a registry can tag + track it. */
+  /** Called with the rendered root Object3D so a registry can tag + track it. */
   onReady: (letter: PeakLetter, object: Object3D) => void;
 }
 
@@ -1324,31 +1311,58 @@ const GLB_PATH: Record<PeakLetter, string> = {
   K: '/models/hero-bottle-k.glb',
 };
 
-export function HeroBottle({ letter, drug, position, onReady }: HeroBottleProps) {
-  const ref = useRef<Mesh>(null);
-  const source = useOptionalGLTF(GLB_PATH[letter]);
+/** If a committed .glb fails to load/parse, fall back to procedural. */
+class GlbErrorBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
 
+function ProceduralBottle({ letter, onReady }: { letter: PeakLetter; onReady: HeroBottleProps['onReady'] }) {
+  const ref = useRef<Mesh>(null);
   useEffect(() => {
     if (ref.current) onReady(letter, ref.current);
   }, [letter, onReady]);
+  return <mesh ref={ref} geometry={heroBottleGeometry()} material={createGlassMaterial()} />;
+}
 
-  const material = createGlassMaterial();
-  const geometry = heroBottleGeometry();
+function GlbBottle({ letter, path, onReady }: { letter: PeakLetter; path: string; onReady: HeroBottleProps['onReady'] }) {
+  const { scene } = useGLTF(path) as unknown as { scene: Group };
+  const ref = useRef<Group>(null);
+  useEffect(() => {
+    if (ref.current) onReady(letter, ref.current);
+  }, [letter, onReady]);
+  // Drop-in: a committed .glb at GLB_PATH renders here with zero edits elsewhere.
+  return <primitive ref={ref} object={scene} />;
+}
+
+export function HeroBottle({ letter, position, onReady }: HeroBottleProps) {
+  const status = useAssetPresence(GLB_PATH[letter]);
+  // Procedural renders immediately for pending/absent, so tagging fires at t0
+  // and the scene never suspends on a missing model file.
+  const procedural = <ProceduralBottle letter={letter} onReady={onReady} />;
 
   return (
     <group position={position}>
-      {source.kind === 'glb' ? (
-        // Drop-in: a committed .glb at GLB_PATH swaps geometry with no other edits.
-        <mesh ref={ref}>
-          <primitive object={source.scene} />
-        </mesh>
+      {shouldRenderGlb(status) ? (
+        <GlbErrorBoundary fallback={procedural}>
+          <Suspense fallback={procedural}>
+            <GlbBottle letter={letter} path={GLB_PATH[letter]} onReady={onReady} />
+          </Suspense>
+        </GlbErrorBoundary>
       ) : (
-        <mesh ref={ref} geometry={geometry} material={material} />
+        procedural
       )}
     </group>
   );
 }
 ```
+
+Note (Task 20 will add hover): `RESTING_LABEL_AWAY` rotation and `onPointerOver/Out` get added to BOTH the `ProceduralBottle` `<mesh>` and the `GlbBottle` `<primitive>` in Task 20 so behavior is identical regardless of geometry source. Do not add hover in Task 13.
 
 - [ ] **Step 4: Implement `components/hero/objects/HeroBottles.tsx`**
 
@@ -1386,7 +1400,6 @@ export function HeroBottles({ registry }: HeroBottlesProps) {
         <HeroBottle
           key={b.letter}
           letter={b.letter}
-          drug={b.drug}
           position={POSITIONS[b.letter]}
           onReady={handleReady}
         />
@@ -2839,15 +2852,18 @@ git commit -m "docs: v0.1.0 changelog — Welcome to Redwood Peak"
 
 ---
 
-## Task 28: Push Phase 1
+## Task 28: Hand off for push (DO NOT PUSH)
 
-- [ ] **Step 1: Push to origin**
+**Project standing rule:** all work happens on the `staging` branch; never commit to `main`; **never run `git push`** (any branch). The user pushes themselves. `main` is touched only on an explicit production-ship order.
 
-Run:
+- [ ] **Step 1: Stop and report — do not push**
+
+Do **not** run `git push`. After Task 27's changelog commit, confirm the working tree is clean on `staging`:
 ```bash
-git push origin main
+git status
+git log --oneline -5
 ```
-Expected: all Phase 1 commits land on the remote.
+Then tell the user Phase 1 is complete on `staging` and ready for them to push. The user runs the push.
 
 ---
 

@@ -1,0 +1,5 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path d="M100 18 L120 70 L108 70 L132 120 L116 120 L150 178 L50 178 L84 120 L68 120 L92 70 L80 70 Z"/>
+  <path d="M30 178 L70 120 L60 120 L88 150 L60 178 Z" opacity="0.7"/>
+  <path d="M170 178 L130 120 L140 120 L112 150 L140 178 Z" opacity="0.7"/>
+</svg>
