@@ -28,11 +28,13 @@ export function TankScene({ registry, quality }: TankSceneProps) {
   }, [camera]);
 
   // Slow cold light sweep on a 20–30s cycle (spec §6.5).
+  // Orbits above the XZ surface and aims straight down at the center for the top-down camera.
   useFrame(({ clock }) => {
     if (sweep.current) {
       const t = clock.elapsedTime / 25; // ~25s period
-      sweep.current.position.x = Math.sin(t * Math.PI * 2) * 8;
-      sweep.current.position.z = 4;
+      sweep.current.position.set(Math.sin(t * Math.PI * 2) * 10, 8, Math.cos(t * Math.PI * 2) * 10);
+      sweep.current.target.position.set(0, 0, 0);
+      sweep.current.target.updateMatrixWorld();
     }
   });
 

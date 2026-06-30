@@ -29,8 +29,8 @@ export function CausticsPlane({ intensity }: CausticsPlaneProps) {
   });
 
   return (
-    <mesh position={[0, 0, -13]}>
-      <planeGeometry args={[40, 30]} />
+    <mesh position={[0, -2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[44, 44]} />
       <shaderMaterial
         ref={matRef}
         vertexShader={causticsVertex}
