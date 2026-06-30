@@ -3,6 +3,7 @@ import { waveGlslHeightNormal } from '../waterField';
 export const waterVertex = /* glsl */ `
   uniform float uTime;
   uniform vec2 uMouse;          // world XZ of the cursor on the surface
+  uniform vec2 uMouseDir;       // normalized drag direction
   uniform float uMouseStrength; // 0..1, decays when the cursor stops moving
   varying vec3 vNormal;
   varying vec3 vWorldPos;
@@ -16,17 +17,21 @@ export const waterVertex = /* glsl */ `
     float dhz = 0.0;
     ${waveGlslHeightNormal()}
 
-    // Finger dragging the water: a depression that FOLLOWS the cursor + a wake.
-    float md = distance(wp, uMouse);
-    float dip = exp(-md * md * 1.1) * uMouseStrength * 0.6;
-    h -= dip;
-    h += sin(md * 6.0 - uTime * 5.0) * exp(-md * 1.6) * uMouseStrength * 0.12;
-    // perturb the normal near the cursor so the dip catches light too
-    vec2 toM = normalize(wp - uMouse + 1e-5);
-    dhx += toM.x * dip * 1.5;
-    dhz += toM.y * dip * 1.5;
+    // Finger dragging ACROSS the water: an elongated trench oriented along the
+    // drag direction, trailing BEHIND the cursor (a wake) — NOT a concentric
+    // ring (that would be a dropped object).
+    vec2 rel = wp - uMouse;
+    float along = dot(rel, uMouseDir);                          // + ahead, - behind
+    float perp = dot(rel, vec2(-uMouseDir.y, uMouseDir.x));     // across the path
+    float lenAlong = along < 0.0 ? 3.4 : 0.8;                   // long trailing wake
+    float trench = exp(-(perp * perp) / 0.6) * exp(-(along * along) / (lenAlong * lenAlong));
+    float cut = trench * uMouseStrength * 0.45;
+    h -= cut;
+    // tilt the trench walls so they catch light (perp gradient)
+    vec2 perpDir = vec2(-uMouseDir.y, uMouseDir.x);
+    dhx += perp * cut * 1.5 * perpDir.x;
+    dhz += perp * cut * 1.5 * perpDir.y;
 
-    // Surface normal from the analytic slope (y is up in world).
     vNormal = normalize(vec3(-dhx, 1.0, -dhz));
     vHeight = h;
 
@@ -42,10 +47,10 @@ export const waterFragment = /* glsl */ `
   precision highp float;
   uniform vec3 uDeep;
   uniform vec3 uShallow;
-  uniform vec3 uSky;      // cool reflected-sky tint at grazing angles
-  uniform vec3 uSpec;     // specular glint colour
+  uniform vec3 uSky;
+  uniform vec3 uSpec;
   uniform vec3 uCameraPos;
-  uniform vec3 uLightDir; // FIXED key dir → glints shimmer with the waves, no sweeping band
+  uniform vec3 uLightDir;
   varying vec3 vNormal;
   varying vec3 vWorldPos;
   varying float vHeight;
@@ -56,18 +61,15 @@ export const waterFragment = /* glsl */ `
     vec3 L = normalize(uLightDir);
     vec3 H = normalize(L + V);
 
-    // Body colour: deeper troughs darker, crests lighter.
     vec3 base = mix(uDeep, uShallow, clamp(vHeight * 0.5 + 0.5, 0.0, 1.0));
 
-    // Fresnel — from straight above it's low, brightening toward grazing.
-    float fres = pow(1.0 - clamp(dot(N, V), 0.0, 1.0), 4.0);
-
-    // Sharp specular glints that shimmer as wave normals tilt through the light.
-    float spec = pow(max(dot(N, H), 0.0), 90.0);
+    // Kept deliberately restrained — small, dim highlights, no eye-searing white.
+    float fres = pow(1.0 - clamp(dot(N, V), 0.0, 1.0), 5.0);
+    float spec = pow(max(dot(N, H), 0.0), 120.0);
 
     vec3 col = base;
-    col = mix(col, uSky, fres * 0.5);
-    col += spec * uSpec * 0.8;
-    gl_FragColor = vec4(col, 0.86);
+    col = mix(col, uSky, fres * 0.14);
+    col += spec * uSpec * 0.2;
+    gl_FragColor = vec4(col, 0.88);
   }
 `;

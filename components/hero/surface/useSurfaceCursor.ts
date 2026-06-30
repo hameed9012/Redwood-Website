@@ -21,6 +21,7 @@ export function useSurfaceCursor(
 ) {
   const { gl, camera } = useThree();
   const last = useRef({ x: 0, y: 0, t: 0 });
+  const lastHit = useRef<{ x: number; z: number } | null>(null);
 
   useEffect(() => {
     const el = gl.domElement;
@@ -39,9 +40,15 @@ export function useSurfaceCursor(
       ndc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
       ray.setFromCamera(ndc, camera);
       if (ray.ray.intersectPlane(plane, hit)) {
-        // Floor so even a slow drag visibly cuts the water (faster → deeper, up to 1).
+        // World-space drag direction (current hit minus the previous hit).
+        const prev = lastHit.current;
+        let dirX = prev ? hit.x - prev.x : 1;
+        let dirZ = prev ? hit.z - prev.z : 0;
+        if (dirX === 0 && dirZ === 0) { dirX = 1; dirZ = 0; }
+        lastHit.current = { x: hit.x, z: hit.z };
+        // Floor so even a slow drag visibly cuts (faster → deeper, up to 1).
         const strength = Math.max(0.45, rippleStrengthForSpeed(speed));
-        handle?.move(hit.x, hit.z, strength);
+        handle?.move(hit.x, hit.z, dirX, dirZ, strength);
         onCut?.(hit.x, hit.z, strength);
       }
     };

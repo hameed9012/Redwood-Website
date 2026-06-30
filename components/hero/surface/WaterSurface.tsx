@@ -6,8 +6,8 @@ import { ShaderMaterial, Color, Vector2, Vector3 } from 'three';
 import { waterVertex, waterFragment } from './shaders/waterSurface.glsl';
 
 export interface WaterSurfaceHandle {
-  /** Set the cursor's world-XZ position on the surface + how hard it's cutting (0..1). */
-  move: (x: number, z: number, strength?: number) => void;
+  /** Set the cursor's world-XZ position, drag direction, and how hard it's cutting (0..1). */
+  move: (x: number, z: number, dirX: number, dirZ: number, strength?: number) => void;
 }
 
 export function WaterSurface({ onReady }: { onReady?: (h: WaterSurfaceHandle) => void } = {}) {
@@ -18,11 +18,12 @@ export function WaterSurface({ onReady }: { onReady?: (h: WaterSurfaceHandle) =>
     () => ({
       uTime: { value: 0 },
       uMouse: { value: new Vector2(0, 0) },
+      uMouseDir: { value: new Vector2(1, 0) },
       uMouseStrength: { value: 0 },
       uDeep: { value: new Color('#06141a') },
       uShallow: { value: new Color('#1d4f4a') },
-      uSky: { value: new Color('#9fc6cf') },
-      uSpec: { value: new Color('#dff3ef') },
+      uSky: { value: new Color('#46666c') },
+      uSpec: { value: new Color('#9fc4bf') },
       uCameraPos: { value: new Vector3(0, 16, 0) },
       uLightDir: { value: new Vector3(-0.4, 0.85, -0.3).normalize() },
     }),
@@ -41,9 +42,11 @@ export function WaterSurface({ onReady }: { onReady?: (h: WaterSurfaceHandle) =>
 
   const handle = useMemo<WaterSurfaceHandle>(
     () => ({
-      move: (x, z, strength = 1) => {
+      move: (x, z, dirX, dirZ, strength = 1) => {
         if (!matRef.current) return;
         matRef.current.uniforms.uMouse.value.set(x, z);
+        const dl = Math.hypot(dirX, dirZ) || 1;
+        matRef.current.uniforms.uMouseDir.value.set(dirX / dl, dirZ / dl);
         const cur = matRef.current.uniforms.uMouseStrength.value as number;
         matRef.current.uniforms.uMouseStrength.value = Math.max(cur, strength);
       },
