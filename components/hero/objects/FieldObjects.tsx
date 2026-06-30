@@ -1,19 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group, Mesh } from 'three';
 import gsap from 'gsap';
 import { fieldBottleGeometry, syringeGeometry } from './proceduralBottleGeo';
 import { createGlassMaterial } from './glassMaterial';
 import { buildRiseSchedule } from '../useIntroRise';
-import { makeFloater, stepFloater, type Cut } from '../surface/waterField';
+import { makeFloater, stepFloater } from '../surface/waterField';
 
 interface FieldObjectsProps {
   count: number;
   /** Deterministic seed so SSR/CSR agree; defaults to a fixed value. */
   seed?: number;
-  pushFrom?: MutableRefObject<{ x: number; z: number; strength: number; t: number }>;
 }
 
 const BOUNDS = { x: 12, z: 12 };
@@ -28,7 +27,7 @@ function mulberry32(seed: number) {
   };
 }
 
-export function FieldObjects({ count, seed = 1337, pushFrom }: FieldObjectsProps) {
+export function FieldObjects({ count, seed = 1337 }: FieldObjectsProps) {
   const bottleGeo = useMemo(() => fieldBottleGeometry(), []);
   const syringeGeo = useMemo(() => syringeGeometry(), []);
   const material = useMemo(() => createGlassMaterial({ cheap: true }), []);
@@ -68,12 +67,10 @@ export function FieldObjects({ count, seed = 1337, pushFrom }: FieldObjectsProps
     const g = groupRef.current;
     if (!g) return;
     const t = clock.elapsedTime;
-    const raw = pushFrom?.current;
-    const cut: Cut | null = raw && raw.t > 0 ? raw : null;
     for (let i = 0; i < g.children.length; i++) {
       const child = g.children[i] as Mesh;
       const it = items[i];
-      const tr = stepFloater(it.floater, t, delta, cut, BOUNDS);
+      const tr = stepFloater(it.floater, t, delta, BOUNDS);
       child.position.set(tr.x, tr.y, tr.z);
       child.rotation.set(
         tr.tiltX + Math.sin(t * it.spinXFreq + it.floater.spinPhase) * it.spinXAmp + t * it.tumble,

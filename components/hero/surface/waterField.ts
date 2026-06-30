@@ -91,13 +91,6 @@ export interface Floater {
   lastCut: number;
 }
 
-export interface Cut {
-  x: number;
-  z: number;
-  strength: number;
-  t: number;
-}
-
 export interface FloatTransform {
   x: number;
   y: number;
@@ -127,36 +120,19 @@ export function makeFloater(rand: () => number, bounds: Bounds): Floater {
 }
 
 const MAX_SPEED = 0.4;
-const CUT_RADIUS = 2.6; // tight: only a near-direct pass shoves much
 const SWAY = 0.32;
 
 /**
  * Advance a floater one frame. Gentle drift (bouncing off the basin edges) +
- * wave sway + a SOFT, proximity-squared cursor nudge (so tracing the water only
- * ripples them briefly and they stay reachable — never flung off-screen).
+ * wave sway. Objects move on their own current; there is no cursor interaction.
  */
-export function stepFloater(f: Floater, t: number, delta: number, cut: Cut | null, bounds: Bounds): FloatTransform {
+export function stepFloater(f: Floater, t: number, delta: number, bounds: Bounds): FloatTransform {
   f.x += f.vx * delta;
   f.z += f.vz * delta;
   if (f.x > bounds.x) { f.x = bounds.x; f.vx = -Math.abs(f.vx); }
   if (f.x < -bounds.x) { f.x = -bounds.x; f.vx = Math.abs(f.vx); }
   if (f.z > bounds.z) { f.z = bounds.z; f.vz = -Math.abs(f.vz); }
   if (f.z < -bounds.z) { f.z = -bounds.z; f.vz = Math.abs(f.vz); }
-
-  if (cut && cut.t > f.lastCut) {
-    f.lastCut = cut.t;
-    const dx = f.x - cut.x;
-    const dz = f.z - cut.z;
-    const dist = Math.hypot(dx, dz);
-    if (dist < CUT_RADIUS && dist > 1e-4) {
-      const prox = 1 - dist / CUT_RADIUS;
-      const push = prox * prox * cut.strength * 0.5; // small, steep falloff
-      f.x += (dx / dist) * push;
-      f.z += (dz / dist) * push;
-      f.vx += (dx / dist) * push * 0.15;
-      f.vz += (dz / dist) * push * 0.15;
-    }
-  }
 
   const sp = Math.hypot(f.vx, f.vz);
   if (sp > MAX_SPEED) { f.vx *= MAX_SPEED / sp; f.vz *= MAX_SPEED / sp; }

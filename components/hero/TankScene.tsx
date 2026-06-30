@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { DirectionalLight } from 'three';
 import { FieldObjects } from './objects/FieldObjects';
@@ -11,8 +11,6 @@ import { CausticsPlane } from './CausticsPlane';
 import { BackgroundLogo } from './BackgroundLogo';
 import { Tanker } from './scenery/Tanker';
 import { WaterSurface } from './surface/WaterSurface';
-import type { WaterSurfaceHandle } from './surface/WaterSurface';
-import { useSurfaceCursor } from './surface/useSurfaceCursor';
 import { useCameraBreathing } from './useCameraBreathing';
 import type { PeakRegistry } from './peak';
 import type { QualityProfile } from './quality';
@@ -25,10 +23,6 @@ interface TankSceneProps {
 export function TankScene({ registry, quality }: TankSceneProps) {
   const sweep = useRef<DirectionalLight>(null);
   useCameraBreathing();
-
-  const [surface, setSurface] = useState<WaterSurfaceHandle | null>(null);
-  const cut = useRef<{ x: number; z: number; strength: number; t: number }>({ x: 0, z: 0, strength: 0, t: 0 });
-  useSurfaceCursor(surface, (x, z, strength) => { cut.current = { x, z, strength, t: performance.now() }; });
 
   const { camera } = useThree();
   useEffect(() => {
@@ -60,13 +54,13 @@ export function TankScene({ registry, quality }: TankSceneProps) {
       <directionalLight position={[-4, 2, 5]} intensity={1.1} color="#8fbfc7" />
 
       {quality.caustics && <CausticsPlane intensity={0.45} />}
-      <WaterSurface onReady={setSurface} />
+      <WaterSurface />
       <BackgroundLogo />
-      <FieldObjects count={quality.bottleCount} pushFrom={cut} />
-      <HeroBottles registry={registry} pushFrom={cut} />
+      <FieldObjects count={quality.bottleCount} />
+      <HeroBottles registry={registry} />
       <Bubbles count={quality.bubbleCount} />
       {Array.from({ length: quality.openBottleCount }).map((_, i) => (
-        <OpenBottle key={i} seed={i + 1} position={[(i - 1.5) * 6, 0, (i % 2 ? 4 : -4)]} pushFrom={cut} />
+        <OpenBottle key={i} seed={i + 1} position={[(i - 1.5) * 6, 0, (i % 2 ? 4 : -4)]} />
       ))}
       <Tanker />
     </>

@@ -1,22 +1,21 @@
 'use client';
 
-import { useMemo, useRef, type MutableRefObject } from 'react';
+import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { BufferGeometry, Float32BufferAttribute, PointsMaterial, Points, type Group } from 'three';
 import { fieldBottleGeometry } from './proceduralBottleGeo';
 import { createGlassMaterial } from './glassMaterial';
-import { makeFloater, stepFloater, type Floater, type Cut } from '../surface/waterField';
+import { makeFloater, stepFloater, type Floater } from '../surface/waterField';
 
 interface OpenBottleProps {
   seed?: number;
   position?: [number, number, number];
-  pushFrom?: MutableRefObject<{ x: number; z: number; strength: number; t: number }>;
 }
 
 const PILL_COUNT = 6;
 const OPEN_BOUNDS = { x: 11, z: 11 };
 
-export function OpenBottle({ seed = 1, position = [0, 0, 0], pushFrom }: OpenBottleProps) {
+export function OpenBottle({ seed = 1, position = [0, 0, 0] }: OpenBottleProps) {
   const bottleGeo = useMemo(() => fieldBottleGeometry(), []);
   const material = useMemo(() => createGlassMaterial({ cheap: true }), []);
   const groupRef = useRef<Group>(null);
@@ -62,10 +61,8 @@ export function OpenBottle({ seed = 1, position = [0, 0, 0], pushFrom }: OpenBot
 
   useFrame(({ clock }, delta) => {
     const t = clock.elapsedTime;
-    const raw = pushFrom?.current;
-    const cut: Cut | null = raw && raw.t > 0 ? raw : null;
 
-    const tr = stepFloater(floater, t, delta, cut, OPEN_BOUNDS);
+    const tr = stepFloater(floater, t, delta, OPEN_BOUNDS);
     if (groupRef.current) groupRef.current.position.set(tr.x, tr.y, tr.z);
     if (bottleRef.current) {
       bottleRef.current.rotation.set(Math.PI * 0.15 + tr.tiltX, floater.spinPhase + t * 0.1, 0.4 + tr.tiltZ);
@@ -73,7 +70,7 @@ export function OpenBottle({ seed = 1, position = [0, 0, 0], pushFrom }: OpenBot
 
     const attr = pills.geometry.getAttribute('position') as Float32BufferAttribute;
     for (let i = 0; i < PILL_COUNT; i++) {
-      const ptr = stepFloater(pillFloaters[i], t, delta, cut, OPEN_BOUNDS);
+      const ptr = stepFloater(pillFloaters[i], t, delta, OPEN_BOUNDS);
       attr.setXYZ(i, ptr.x, ptr.y + 0.05, ptr.z);
     }
     attr.needsUpdate = true;

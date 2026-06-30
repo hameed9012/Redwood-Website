@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useMemo, Suspense, Component, type ReactNode, type MutableRefObject } from 'react';
+import { useRef, useEffect, useMemo, Suspense, Component, type ReactNode } from 'react';
 import type { Object3D, Group } from 'three';
 import { CanvasTexture } from 'three';
 import { useFrame } from '@react-three/fiber';
@@ -9,7 +9,7 @@ import { heroBottleGeometry } from './proceduralBottleGeo';
 import { createGlassMaterial } from './glassMaterial';
 import { useAssetPresence, shouldRenderGlb } from './useOptionalGLTF';
 import { useHoverToRead, RESTING_TILT } from '../useHoverToRead';
-import { stepFloater, type Floater, type Cut } from '../surface/waterField';
+import { stepFloater, type Floater } from '../surface/waterField';
 import { drugFor, type PeakLetter } from '../peak';
 
 interface HeroBottleProps {
@@ -21,7 +21,6 @@ interface HeroBottleProps {
    * dependency, so an inline arrow would re-register on every parent re-render.
    */
   onReady: (letter: PeakLetter, object: Object3D) => void;
-  pushFrom?: MutableRefObject<{ x: number; z: number; strength: number; t: number }>;
 }
 
 const GLB_PATH: Record<PeakLetter, string> = {
@@ -102,7 +101,7 @@ function GlbBottle({ letter, path, onReady }: { letter: PeakLetter; path: string
 // PEAK bottles float more centrally than the field so they stay findable.
 const PEAK_BOUNDS = { x: 9, z: 9 };
 
-export function HeroBottle({ letter, position, onReady, pushFrom }: HeroBottleProps) {
+export function HeroBottle({ letter, position, onReady }: HeroBottleProps) {
   const status = useAssetPresence(GLB_PATH[letter]);
   const groupRef = useRef<Group>(null);
   const phase = useMemo(() => ({ P: 0.12, E: 0.41, A: 0.68, K: 0.91 }[letter]), [letter]);
@@ -127,9 +126,7 @@ export function HeroBottle({ letter, position, onReady, pushFrom }: HeroBottlePr
   useFrame(({ clock }, delta) => {
     const g = groupRef.current;
     if (!g) return;
-    const raw = pushFrom?.current;
-    const cut: Cut | null = raw && raw.t > 0 ? raw : null;
-    const tr = stepFloater(floater, clock.elapsedTime, delta, cut, PEAK_BOUNDS);
+    const tr = stepFloater(floater, clock.elapsedTime, delta, PEAK_BOUNDS);
     g.position.set(tr.x, tr.y, tr.z);
     // Gentle roll on Z only; X + yaw stay 0 so the hover tilt (inner group) reads cleanly.
     g.rotation.set(0, 0, tr.tiltZ * 0.6);
