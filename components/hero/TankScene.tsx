@@ -8,6 +8,7 @@ import { HeroBottles } from './objects/HeroBottles';
 import { Bubbles } from './Bubbles';
 import { CausticsPlane } from './CausticsPlane';
 import { BackgroundLogo } from './BackgroundLogo';
+import { WaterSurface } from './surface/WaterSurface';
 import { useCameraBreathing } from './useCameraBreathing';
 import type { PeakRegistry } from './peak';
 import type { QualityProfile } from './quality';
@@ -51,6 +52,7 @@ export function TankScene({ registry, quality }: TankSceneProps) {
       <directionalLight position={[-4, 2, 5]} intensity={1.1} color="#8fbfc7" />
 
       {quality.caustics && <CausticsPlane intensity={0.45} />}
+      <WaterSurface />
       <BackgroundLogo />
       <FieldObjects count={quality.bottleCount} />
       <HeroBottles registry={registry} />
