@@ -6,7 +6,8 @@ import { ShaderMaterial, Color, Vector2 } from 'three';
 import { waterVertex, waterFragment } from './shaders/waterSurface.glsl';
 
 export interface WaterSurfaceHandle {
-  ripple: (x: number, z: number, strength?: number) => void;
+  /** Set the cursor's world-XZ position on the surface + how hard it's cutting (0..1). */
+  move: (x: number, z: number, strength?: number) => void;
 }
 
 export function WaterSurface({ onReady }: { onReady?: (h: WaterSurfaceHandle) => void } = {}) {
@@ -15,9 +16,8 @@ export function WaterSurface({ onReady }: { onReady?: (h: WaterSurfaceHandle) =>
   const uniforms = useMemo(
     () => ({
       uTime: { value: 0 },
-      uRippleOrigin: { value: new Vector2(0, 0) },
-      uRippleTime: { value: 999 },
-      uRippleStrength: { value: 0 },
+      uMouse: { value: new Vector2(0, 0) },
+      uMouseStrength: { value: 0 },
       uDeep: { value: new Color('#06141a') },
       uShallow: { value: new Color('#2f6f6a') },
     }),
@@ -27,16 +27,19 @@ export function WaterSurface({ onReady }: { onReady?: (h: WaterSurfaceHandle) =>
   useFrame((_, delta) => {
     if (!matRef.current) return;
     matRef.current.uniforms.uTime.value += delta;
-    matRef.current.uniforms.uRippleTime.value += delta;
+    // The cut fades when the cursor stops moving, so the trough trails the finger.
+    const s = matRef.current.uniforms.uMouseStrength.value as number;
+    matRef.current.uniforms.uMouseStrength.value = Math.max(0, s - delta * 1.6);
   });
 
   const handle = useMemo<WaterSurfaceHandle>(
     () => ({
-      ripple: (x, z, strength = 1) => {
+      move: (x, z, strength = 1) => {
         if (!matRef.current) return;
-        matRef.current.uniforms.uRippleOrigin.value.set(x, z);
-        matRef.current.uniforms.uRippleTime.value = 0;
-        matRef.current.uniforms.uRippleStrength.value = strength;
+        matRef.current.uniforms.uMouse.value.set(x, z);
+        // Keep the strongest recent cut; useFrame decays it.
+        const cur = matRef.current.uniforms.uMouseStrength.value as number;
+        matRef.current.uniforms.uMouseStrength.value = Math.max(cur, strength);
       },
     }),
     [],

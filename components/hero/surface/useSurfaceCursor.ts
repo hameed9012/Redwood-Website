@@ -39,8 +39,9 @@ export function useSurfaceCursor(
       ndc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
       ray.setFromCamera(ndc, camera);
       if (ray.ray.intersectPlane(plane, hit)) {
-        const strength = rippleStrengthForSpeed(speed);
-        handle?.ripple(hit.x, hit.z, strength);
+        // Floor so even a slow drag visibly cuts the water (faster → deeper, up to 1).
+        const strength = Math.max(0.45, rippleStrengthForSpeed(speed));
+        handle?.move(hit.x, hit.z, strength);
         onCut?.(hit.x, hit.z, strength);
       }
     };

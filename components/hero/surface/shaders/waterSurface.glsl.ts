@@ -1,49 +1,51 @@
 export const waterVertex = /* glsl */ `
   uniform float uTime;
-  uniform vec2 uRippleOrigin;
-  uniform float uRippleTime;
-  uniform float uRippleStrength;
-  varying vec3 vWorld;
+  uniform vec2 uMouse;          // world XZ of the cursor on the surface
+  uniform float uMouseStrength; // 0..1, decays when the cursor stops moving
   varying float vHeight;
 
-  float wave(vec2 p, vec2 d, float k, float s, float a) {
-    return a * sin(dot(normalize(d), p) * k + uTime * s);
+  float wave(vec2 p, vec2 dir, float k, float s, float a) {
+    return a * sin(dot(normalize(dir), p) * k + uTime * s);
   }
 
   void main() {
-    vec3 pos = position;
-    vec2 p = pos.xy; // local XY (before the -90deg X rotation) -> world XZ
+    // Undisplaced world XZ — so waves + cursor are in one consistent space
+    // (the plane is rotated -90deg about X, so we read world, not local).
+    vec2 wp = (modelMatrix * vec4(position, 1.0)).xz;
+
+    // Gentle, varied swell — small amplitudes so it reads as a moving sea
+    // surface, not a rigid corrugation.
     float h = 0.0;
-    h += wave(p, vec2(1.0, 0.2), 0.55, 0.9, 0.35);
-    h += wave(p, vec2(-0.4, 1.0), 0.8, 1.1, 0.22);
-    h += wave(p, vec2(0.7, -0.6), 1.3, 1.6, 0.12);
-    h += wave(p, vec2(0.2, 0.9), 2.1, 2.2, 0.06);
+    h += wave(wp, vec2(1.0, 0.3), 0.22, 0.6, 0.16);
+    h += wave(wp, vec2(-0.5, 1.0), 0.35, 0.8, 0.10);
+    h += wave(wp, vec2(0.8, -0.4), 0.70, 1.1, 0.05);
+    h += wave(wp, vec2(-0.2, -0.9), 1.40, 1.5, 0.025);
+    h += wave(wp, vec2(0.6, 0.7), 2.60, 2.0, 0.012);
 
-    float d = distance(p, uRippleOrigin);
-    float ring = sin(d * 3.0 - uRippleTime * 6.0) * exp(-d * 0.35) * exp(-uRippleTime * 1.2);
-    h += ring * uRippleStrength * 0.8;
+    // Finger dragging through the water: a depression centred on the cursor
+    // that FOLLOWS it (not a one-off expanding ring), plus a small trailing wake.
+    float d = distance(wp, uMouse);
+    h -= exp(-d * d * 1.1) * uMouseStrength * 0.6;
+    h += sin(d * 6.0 - uTime * 5.0) * exp(-d * 1.6) * uMouseStrength * 0.12;
 
+    vec3 pos = position;
     pos.z += h;
     vHeight = h;
-    vec4 world = modelMatrix * vec4(pos, 1.0);
-    vWorld = world.xyz;
-    gl_Position = projectionMatrix * viewMatrix * world;
+    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(pos, 1.0);
   }
 `;
 
 export const waterFragment = /* glsl */ `
   precision highp float;
-  uniform float uTime;
   uniform vec3 uDeep;
   uniform vec3 uShallow;
-  varying vec3 vWorld;
   varying float vHeight;
 
   void main() {
-    float t = clamp(vHeight * 0.6 + 0.5, 0.0, 1.0);
+    // Gentle height tint only — no time-swept glint band (that read as an
+    // annoying light sweeping over the water).
+    float t = clamp(vHeight * 0.35 + 0.5, 0.0, 1.0);
     vec3 col = mix(uDeep, uShallow, t);
-    float glint = smoothstep(0.86, 1.0, sin(vWorld.x * 0.15 + vWorld.z * 0.1 + uTime * 0.4));
-    col += glint * 0.18;
     gl_FragColor = vec4(col, 0.92);
   }
 `;
