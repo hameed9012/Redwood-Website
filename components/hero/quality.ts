@@ -35,12 +35,14 @@ export function detectTier(s: DeviceSignals): Tier {
 export function qualityFor(tier: Tier): QualityProfile {
   const base = { heroBottlesPresent: true };
   switch (tier) {
+    // dpr capped + counts trimmed: the scene is fill-rate bound on integrated GPUs
+    // (R2-11 profiling), so internal render resolution is the highest-leverage knob.
     case 'low':
       return { ...base, maxDpr: 1, bottleCount: 10, bubbleCount: 20, openBottleCount: 1, postprocessing: false, caustics: false, hdriPath: '/hdri/dark-studio-low.hdr' };
     case 'mid':
-      return { ...base, maxDpr: 1.5, bottleCount: 22, bubbleCount: 50, openBottleCount: 2, postprocessing: true, caustics: true, hdriPath: '/hdri/dark-studio-low.hdr' };
+      return { ...base, maxDpr: 1, bottleCount: 16, bubbleCount: 40, openBottleCount: 2, postprocessing: true, caustics: true, hdriPath: '/hdri/dark-studio-low.hdr' };
     case 'high':
-      return { ...base, maxDpr: 2, bottleCount: 38, bubbleCount: 90, openBottleCount: 4, postprocessing: true, caustics: true, hdriPath: '/hdri/dark-studio.hdr' };
+      return { ...base, maxDpr: 1.25, bottleCount: 24, bubbleCount: 60, openBottleCount: 3, postprocessing: true, caustics: true, hdriPath: '/hdri/dark-studio.hdr' };
   }
 }
 

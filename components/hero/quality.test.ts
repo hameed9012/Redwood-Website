@@ -31,7 +31,7 @@ describe('qualityFor', () => {
     const q = qualityFor('high');
     expect(q.postprocessing).toBe(true);
     expect(q.caustics).toBe(true);
-    expect(q.maxDpr).toBeGreaterThanOrEqual(1.5);
+    expect(q.maxDpr).toBeGreaterThanOrEqual(1);
   });
 
   it('every tier keeps the 4 PEAK bottles present', () => {

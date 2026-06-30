@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { nextTypeState } from './useTypewriter';
+import { nextTypeState, type TypeState } from './useTypewriter';
 
 describe('nextTypeState', () => {
   const phrases = ['ab', 'cd'];
@@ -11,7 +11,7 @@ describe('nextTypeState', () => {
     expect(s2.text).toBe('ab');
   });
   it('switches to deleting after a full phrase, then advances to the next phrase', () => {
-    let s = { phrase: 0, text: 'ab', mode: 'typing' as const };
+    let s: TypeState = { phrase: 0, text: 'ab', mode: 'typing' };
     s = nextTypeState(s, phrases);
     let guard = 0;
     while (!(s.phrase === 1 && s.text === '') && guard++ < 20) s = nextTypeState(s, phrases);

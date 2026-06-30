@@ -3,8 +3,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Environment } from '@react-three/drei';
-import { EffectComposer, Bloom, DepthOfField, Vignette, ChromaticAberration } from '@react-three/postprocessing';
-import { Vector2 } from 'three';
+import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { TankScene } from './TankScene';
 import { PeakRegistry } from './peak';
 import { detectTierFromBrowser, qualityFor, type QualityProfile } from './quality';
@@ -26,9 +25,6 @@ export function HeroTank() {
     }
   }, []);
 
-  // ChromaticAberration's `offset` prop requires a THREE.Vector2, not a plain array.
-  const chromaticOffset = useMemo(() => new Vector2(0.0006, 0.0006), []);
-
   return (
     <Canvas
       className="absolute inset-0"
@@ -38,12 +34,14 @@ export function HeroTank() {
     >
       <Environment files={quality.hdriPath} environmentIntensity={1.8} />
       <TankScene registry={registry} quality={quality} />
+      {/* Lean postprocessing — DepthOfField + ChromaticAberration dropped: profiling
+          (R2-11) showed the scene is fill-rate bound at 1920px and DoF was the
+          dominant full-screen pass (~16→50 FPS when viewport shrank). Bloom +
+          vignette are the cheap, high-value passes. */}
       {quality.postprocessing && (
         <EffectComposer>
           <Bloom intensity={0.6} luminanceThreshold={0.6} mipmapBlur />
-          <DepthOfField focusDistance={0.02} focalLength={0.05} bokehScale={2} />
           <Vignette eskil={false} offset={0.3} darkness={0.7} />
-          <ChromaticAberration offset={chromaticOffset} radialModulation={false} modulationOffset={0} />
         </EffectComposer>
       )}
     </Canvas>
