@@ -10,8 +10,9 @@ describe('CopyReveal', () => {
     expect(screen.getByText(/We are a/)).toBeInTheDocument();
   });
 
-  it('renders the first cycling phrase', () => {
+  it('renders the fixed lead-in and begins typing the first phrase', async () => {
     render(<CopyReveal />);
-    expect(screen.getByText('A Pharmaceutical company')).toBeInTheDocument();
+    expect(screen.getByText(/We are a/)).toBeInTheDocument();
+    await screen.findByText((_, el) => !!el && el.classList.contains('text-rw-red') && el.textContent!.includes('A'));
   });
 });

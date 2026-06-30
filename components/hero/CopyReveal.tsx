@@ -1,23 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { HERO_PHRASES, nextPhraseIndex } from './phrases';
+import { HERO_PHRASES } from './phrases';
 import { useRevealSequence } from './useRevealSequence';
-
-const PHRASE_HOLD_MS = 3000;
+import { useTypewriter } from './useTypewriter';
 
 export function CopyReveal() {
-  const [index, setIndex] = useState(0);
   const mode = useRevealSequence();
   const showIntro = mode === 'full';
-
-  useEffect(() => {
-    const id = setInterval(
-      () => setIndex((i) => nextPhraseIndex(i, HERO_PHRASES.length)),
-      PHRASE_HOLD_MS,
-    );
-    return () => clearInterval(id);
-  }, []);
+  const typed = useTypewriter(HERO_PHRASES, true);
 
   return (
     <div className="select-none">
@@ -31,24 +21,9 @@ export function CopyReveal() {
       )}
       <p className="text-rw-bone text-lg mt-3">
         We are a{' '}
-        <span className="relative inline-block align-baseline">
-          {HERO_PHRASES.map((phrase, i) => (
-            <span
-              key={phrase}
-              className="text-rw-red font-semibold transition-all duration-700"
-              style={{
-                position: i === index ? 'relative' : 'absolute',
-                left: 0,
-                opacity: i === index ? 1 : 0,
-                transform: i === index ? 'translateY(0)' : 'translateY(8px)',
-                pointerEvents: 'none',
-                whiteSpace: 'nowrap',
-              }}
-              aria-hidden={i !== index}
-            >
-              {phrase}
-            </span>
-          ))}
+        <span className="text-rw-red font-semibold whitespace-nowrap">
+          {typed.text}
+          <span className="inline-block w-[1px] -mb-[2px] ml-[1px] animate-pulse">▮</span>
         </span>
       </p>
     </div>
