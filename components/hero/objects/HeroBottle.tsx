@@ -113,8 +113,9 @@ export function HeroBottle({ letter, position, onReady, pushFrom }: HeroBottlePr
     () => ({
       x: position[0],
       z: position[2],
-      vx: (phase - 0.5) * 0.4,
-      vz: (0.5 - phase) * 0.4,
+      vx: (phase - 0.5) * 0.3,
+      vz: (0.5 - phase) * 0.3,
+      depth: 0,
       enterY: 0,
       spinPhase: phase * 6.2831853,
       lastCut: 0,

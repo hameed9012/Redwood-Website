@@ -2,13 +2,12 @@
 
 /**
  * Single source of truth for the water's wave field — shared by the GLSL surface
- * shader (so the surface you SEE) and by the floating objects (so they move on
- * the SAME water). Floating debris has no home position: it drifts, sways as
- * waves pass, and is permanently displaced by the cursor (no snap-back).
+ * shader (the water you SEE) and by the floating objects (so they move on the
+ * SAME water). Floating debris has no home: it drifts, sways as waves pass, and
+ * is gently nudged by the cursor — never snapping back.
  *
  * Top-down note: the camera looks straight down −Y, so vertical bob is nearly
- * invisible. What reads as "alive" is HORIZONTAL motion — drift + wave sway +
- * cursor shove. The Y ride is kept subtle (mostly drives tilt).
+ * invisible. What reads as "alive" is HORIZONTAL motion.
  */
 
 export interface WaveDef {
@@ -18,13 +17,12 @@ export interface WaveDef {
   a: number; // amplitude
 }
 
-/** Bumped amplitudes (vs the first pass) so the surface + floaters visibly move. */
 export const WAVES: WaveDef[] = [
-  { dir: [1.0, 0.3], k: 0.22, s: 0.6, a: 0.5 },
-  { dir: [-0.5, 1.0], k: 0.35, s: 0.8, a: 0.32 },
-  { dir: [0.8, -0.4], k: 0.7, s: 1.1, a: 0.16 },
-  { dir: [-0.2, -0.9], k: 1.4, s: 1.5, a: 0.08 },
-  { dir: [0.6, 0.7], k: 2.6, s: 2.0, a: 0.04 },
+  { dir: [1.0, 0.3], k: 0.22, s: 0.5, a: 0.5 },
+  { dir: [-0.5, 1.0], k: 0.35, s: 0.7, a: 0.32 },
+  { dir: [0.8, -0.4], k: 0.7, s: 0.9, a: 0.16 },
+  { dir: [-0.2, -0.9], k: 1.4, s: 1.2, a: 0.08 },
+  { dir: [0.6, 0.7], k: 2.6, s: 1.6, a: 0.04 },
 ];
 
 function nrm(d: [number, number]): [number, number] {
@@ -32,7 +30,7 @@ function nrm(d: [number, number]): [number, number] {
   return [d[0] / l, d[1] / l];
 }
 
-/** Surface height at world (x, z) and time t — matches the GLSL `waveGlsl()`. */
+/** Surface height at world (x, z) and time t — matches the GLSL. */
 export function waveHeight(x: number, z: number, t: number): number {
   let h = 0;
   for (const w of WAVES) {
@@ -42,20 +40,41 @@ export function waveHeight(x: number, z: number, t: number): number {
   return h;
 }
 
-/** Surface slope (∂h/∂x, ∂h/∂z) via finite differences — drives sway + tilt. */
+/** Surface slope (∂h/∂x, ∂h/∂z) — drives object sway + tilt. */
 export function waveSlope(x: number, z: number, t: number): { sx: number; sz: number } {
-  const e = 0.35;
-  return {
-    sx: (waveHeight(x + e, z, t) - waveHeight(x - e, z, t)) / (2 * e),
-    sz: (waveHeight(x, z + e, t) - waveHeight(x, z - e, t)) / (2 * e),
-  };
+  let sx = 0;
+  let sz = 0;
+  for (const w of WAVES) {
+    const d = nrm(w.dir);
+    const c = Math.cos((d[0] * x + d[1] * z) * w.k + t * w.s) * w.a * w.k;
+    sx += c * d[0];
+    sz += c * d[1];
+  }
+  return { sx, sz };
 }
 
-/** GLSL that fills `float h` from `vec2 wp` (world XZ) + `uTime`. Parity with waveHeight. */
-export function waveGlsl(): string {
+/**
+ * GLSL filling `float h`, `float dhx`, `float dhz` from `vec2 wp` (world XZ) +
+ * `uTime`. Parity with waveHeight/waveSlope, and provides analytic derivatives
+ * so the fragment can build a real surface normal (lit waves, not a flat tint).
+ */
+export function waveGlslHeightNormal(): string {
   return WAVES.map((w) => {
     const d = nrm(w.dir);
-    return `h += ${w.a.toFixed(4)} * sin((${d[0].toFixed(4)} * wp.x + ${d[1].toFixed(4)} * wp.y) * ${w.k.toFixed(4)} + uTime * ${w.s.toFixed(4)});`;
+    const dx = d[0].toFixed(4);
+    const dy = d[1].toFixed(4);
+    const k = w.k.toFixed(4);
+    const s = w.s.toFixed(4);
+    const a = w.a.toFixed(4);
+    return [
+      `{`,
+      `  float ph = (${dx} * wp.x + ${dy} * wp.y) * ${k} + uTime * ${s};`,
+      `  h += ${a} * sin(ph);`,
+      `  float c = ${a} * ${k} * cos(ph);`,
+      `  dhx += c * ${dx};`,
+      `  dhz += c * ${dy};`,
+      `}`,
+    ].join('\n    ');
   }).join('\n    ');
 }
 
@@ -66,16 +85,17 @@ export interface Floater {
   z: number;
   vx: number;
   vz: number;
-  enterY: number; // intro-rise offset, animated from below the surface up to 0
+  depth: number;  // 0 = surface; negative = drifting under the water
+  enterY: number; // intro-rise offset, animated from below up to 0
   spinPhase: number;
-  lastCut: number; // timestamp of the last cursor cut already applied
+  lastCut: number;
 }
 
 export interface Cut {
   x: number;
   z: number;
   strength: number;
-  t: number; // performance.now() of the cut
+  t: number;
 }
 
 export interface FloatTransform {
@@ -92,28 +112,30 @@ export interface Bounds {
 }
 
 export function makeFloater(rand: () => number, bounds: Bounds): Floater {
+  const submerged = rand() < 0.4;
   return {
     x: (rand() - 0.5) * bounds.x * 1.8,
     z: (rand() - 0.5) * bounds.z * 1.8,
-    vx: (rand() - 0.5) * 0.5,
-    vz: (rand() - 0.5) * 0.5,
+    vx: (rand() - 0.5) * 0.22,
+    vz: (rand() - 0.5) * 0.22,
+    // Some objects are denser / water-logged and drift below the surface.
+    depth: submerged ? -(0.8 + rand() * 2.8) : 0,
     enterY: -8,
     spinPhase: rand() * 6.2831853,
     lastCut: 0,
   };
 }
 
-const MAX_SPEED = 0.9;
-const CUT_RADIUS = 5;
-const SWAY = 0.6;
+const MAX_SPEED = 0.4;
+const CUT_RADIUS = 2.6; // tight: only a near-direct pass shoves much
+const SWAY = 0.32;
 
 /**
- * Advance a floater one frame and return where to draw it. Drifts with its own
- * gentle current (bouncing off the basin walls), sways with the wave slope, and
- * is permanently shoved by a recent cursor cut — it never returns to a "home".
+ * Advance a floater one frame. Gentle drift (bouncing off the basin edges) +
+ * wave sway + a SOFT, proximity-squared cursor nudge (so tracing the water only
+ * ripples them briefly and they stay reachable — never flung off-screen).
  */
 export function stepFloater(f: Floater, t: number, delta: number, cut: Cut | null, bounds: Bounds): FloatTransform {
-  // Gentle drift, reflecting at the basin edges so objects stay in view.
   f.x += f.vx * delta;
   f.z += f.vz * delta;
   if (f.x > bounds.x) { f.x = bounds.x; f.vx = -Math.abs(f.vx); }
@@ -121,31 +143,29 @@ export function stepFloater(f: Floater, t: number, delta: number, cut: Cut | nul
   if (f.z > bounds.z) { f.z = bounds.z; f.vz = -Math.abs(f.vz); }
   if (f.z < -bounds.z) { f.z = -bounds.z; f.vz = Math.abs(f.vz); }
 
-  // Cursor cut: permanent shove + a velocity kick so it keeps drifting away.
   if (cut && cut.t > f.lastCut) {
     f.lastCut = cut.t;
     const dx = f.x - cut.x;
     const dz = f.z - cut.z;
     const dist = Math.hypot(dx, dz);
     if (dist < CUT_RADIUS && dist > 1e-4) {
-      const push = (1 - dist / CUT_RADIUS) * cut.strength;
-      f.x += (dx / dist) * push * 1.2;
-      f.z += (dz / dist) * push * 1.2;
-      f.vx += (dx / dist) * push * 0.7;
-      f.vz += (dz / dist) * push * 0.7;
+      const prox = 1 - dist / CUT_RADIUS;
+      const push = prox * prox * cut.strength * 0.5; // small, steep falloff
+      f.x += (dx / dist) * push;
+      f.z += (dz / dist) * push;
+      f.vx += (dx / dist) * push * 0.15;
+      f.vz += (dz / dist) * push * 0.15;
     }
   }
 
-  // Keep velocities sane after repeated kicks.
   const sp = Math.hypot(f.vx, f.vz);
   if (sp > MAX_SPEED) { f.vx *= MAX_SPEED / sp; f.vz *= MAX_SPEED / sp; }
 
-  // Sway with the wave field (objects slide along the surface gradient as waves
-  // pass) + a subtle vertical ride that mostly feeds tilt.
   const sl = waveSlope(f.x, f.z, t);
+  const ride = f.depth < 0 ? 0.2 : 0.6; // submerged objects ride the waves less
   return {
     x: f.x - sl.sx * SWAY,
-    y: waveHeight(f.x, f.z, t) * 0.6 + f.enterY,
+    y: waveHeight(f.x, f.z, t) * ride + f.depth + f.enterY,
     z: f.z - sl.sz * SWAY,
     tiltX: sl.sz * 0.9,
     tiltZ: -sl.sx * 0.9,

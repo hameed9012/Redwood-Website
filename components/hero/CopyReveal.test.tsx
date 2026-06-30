@@ -7,12 +7,14 @@ describe('CopyReveal', () => {
     render(<CopyReveal />);
     expect(screen.getByText('Hello,')).toBeInTheDocument();
     expect(screen.getByText('We are The Redwood Co.')).toBeInTheDocument();
-    expect(screen.getByText(/We are a/)).toBeInTheDocument();
   });
 
-  it('renders the fixed lead-in and begins typing the first phrase', async () => {
+  it('begins typing the first phrase into the red span', async () => {
     render(<CopyReveal />);
-    expect(screen.getByText(/We are a/)).toBeInTheDocument();
-    await screen.findByText((_, el) => !!el && el.classList.contains('text-rw-red') && el.textContent!.includes('A'));
+    // The lead-in is "We are " (no trailing "a", so phrases like "A Pharmaceutical
+    // company" don't double the article). The typewriter fills the red span.
+    await screen.findByText(
+      (_, el) => !!el && el.classList.contains('text-rw-red') && el.textContent!.includes('A'),
+    );
   });
 });

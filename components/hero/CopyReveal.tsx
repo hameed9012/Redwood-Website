@@ -20,7 +20,7 @@ export function CopyReveal() {
         </>
       )}
       <p className="text-rw-bone text-lg mt-3">
-        We are a{' '}
+        We are{' '}
         <span className="text-rw-red font-semibold whitespace-nowrap">
           {typed.text}
           <span className="inline-block w-[1px] -mb-[2px] ml-[1px] animate-pulse">▮</span>

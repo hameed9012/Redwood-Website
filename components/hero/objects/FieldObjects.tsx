@@ -39,12 +39,14 @@ export function FieldObjects({ count, seed = 1337, pushFrom }: FieldObjectsProps
       key: i,
       isSyringe: rand() > 0.7,
       scale: 0.28 + rand() * 0.34,
-      // slow independent tumble so each object rolls a little on the water
-      spinXAmp: 0.25 + rand() * 0.3,
-      spinZAmp: 0.25 + rand() * 0.3,
-      spinXFreq: 0.2 + rand() * 0.3,
-      spinZFreq: 0.2 + rand() * 0.3,
-      yawSpeed: (rand() - 0.5) * 0.25,
+      // gentle independent bob/roll on the water
+      spinXAmp: 0.12 + rand() * 0.18,
+      spinZAmp: 0.12 + rand() * 0.18,
+      spinXFreq: 0.1 + rand() * 0.18,
+      spinZFreq: 0.1 + rand() * 0.18,
+      yawSpeed: (rand() - 0.5) * 0.12,
+      // ~18% slowly turn over (a bottle rolling in the current)
+      tumble: rand() < 0.18 ? 0.12 + rand() * 0.18 : 0,
       floater: makeFloater(rand, BOUNDS),
     }));
   }, [count, seed]);
@@ -74,7 +76,7 @@ export function FieldObjects({ count, seed = 1337, pushFrom }: FieldObjectsProps
       const tr = stepFloater(it.floater, t, delta, cut, BOUNDS);
       child.position.set(tr.x, tr.y, tr.z);
       child.rotation.set(
-        tr.tiltX + Math.sin(t * it.spinXFreq + it.floater.spinPhase) * it.spinXAmp,
+        tr.tiltX + Math.sin(t * it.spinXFreq + it.floater.spinPhase) * it.spinXAmp + t * it.tumble,
         it.floater.spinPhase + t * it.yawSpeed,
         tr.tiltZ + Math.cos(t * it.spinZFreq + it.floater.spinPhase) * it.spinZAmp,
       );
