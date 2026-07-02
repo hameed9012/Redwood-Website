@@ -6,6 +6,7 @@ import { BufferGeometry, Float32BufferAttribute, PointsMaterial, Points, type Gr
 import { fieldBottleGeometry } from './proceduralBottleGeo';
 import { createGlassMaterial } from './glassMaterial';
 import { makeFloater, stepFloater, type Floater } from '../surface/waterField';
+import { useFreeze } from '../puzzle/useFreeze';
 
 interface OpenBottleProps {
   seed?: number;
@@ -20,6 +21,7 @@ export function OpenBottle({ seed = 1, position = [0, 0, 0] }: OpenBottleProps) 
   const material = useMemo(() => createGlassMaterial({ cheap: true }), []);
   const groupRef = useRef<Group>(null);
   const bottleRef = useRef<Group>(null);
+  const frozen = useFreeze();
 
   const floater = useMemo<Floater>(
     () => ({
@@ -60,6 +62,7 @@ export function OpenBottle({ seed = 1, position = [0, 0, 0] }: OpenBottleProps) 
   }, []);
 
   useFrame(({ clock }, delta) => {
+    if (frozen.current) return;
     const t = clock.elapsedTime;
 
     const tr = stepFloater(floater, t, delta, OPEN_BOUNDS);

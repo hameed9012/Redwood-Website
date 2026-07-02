@@ -14,6 +14,7 @@ import { WaterSurface } from './surface/WaterSurface';
 import { useCameraBreathing } from './useCameraBreathing';
 import type { PeakRegistry } from './peak';
 import type { QualityProfile } from './quality';
+import { useFreeze } from './puzzle/useFreeze';
 
 interface TankSceneProps {
   registry: PeakRegistry;
@@ -22,6 +23,7 @@ interface TankSceneProps {
 
 export function TankScene({ registry, quality }: TankSceneProps) {
   const sweep = useRef<DirectionalLight>(null);
+  const frozen = useFreeze();
   useCameraBreathing();
 
   const { camera } = useThree();
@@ -33,6 +35,7 @@ export function TankScene({ registry, quality }: TankSceneProps) {
   // Slow cold light sweep on a 20–30s cycle (spec §6.5).
   // Orbits above the XZ surface and aims straight down at the center for the top-down camera.
   useFrame(({ clock }) => {
+    if (frozen.current) return;
     if (sweep.current) {
       const t = clock.elapsedTime / 25; // ~25s period
       sweep.current.position.set(Math.sin(t * Math.PI * 2) * 10, 8, Math.cos(t * Math.PI * 2) * 10);

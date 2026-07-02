@@ -4,6 +4,7 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { ShaderMaterial, Color, AdditiveBlending } from 'three';
 import { causticsVertex, causticsFragment } from './shaders/caustics.glsl';
+import { useFreeze } from './puzzle/useFreeze';
 
 interface CausticsPlaneProps {
   intensity: number;
@@ -11,6 +12,7 @@ interface CausticsPlaneProps {
 
 export function CausticsPlane({ intensity }: CausticsPlaneProps) {
   const matRef = useRef<ShaderMaterial>(null);
+  const frozen = useFreeze();
 
   const uniforms = useMemo(
     () => ({
@@ -22,6 +24,7 @@ export function CausticsPlane({ intensity }: CausticsPlaneProps) {
   );
 
   useFrame((_, delta) => {
+    if (frozen.current) return;
     if (matRef.current) {
       (matRef.current.uniforms.uTime.value as number) += delta;
       matRef.current.uniforms.uIntensity.value = intensity;

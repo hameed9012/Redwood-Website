@@ -8,6 +8,7 @@ import { fieldBottleGeometry, syringeGeometry } from './proceduralBottleGeo';
 import { createGlassMaterial } from './glassMaterial';
 import { buildRiseSchedule } from '../useIntroRise';
 import { makeFloater, stepFloater } from '../surface/waterField';
+import { useFreeze } from '../puzzle/useFreeze';
 
 interface FieldObjectsProps {
   count: number;
@@ -51,6 +52,7 @@ export function FieldObjects({ count, seed = 1337 }: FieldObjectsProps) {
   }, [count, seed]);
 
   const groupRef = useRef<Group>(null);
+  const frozen = useFreeze();
 
   // Staggered intro rise: each object lifts from below the surface up to it, then free-floats.
   useEffect(() => {
@@ -64,6 +66,7 @@ export function FieldObjects({ count, seed = 1337 }: FieldObjectsProps) {
   }, [items, seed]);
 
   useFrame(({ clock }, delta) => {
+    if (frozen.current) return;
     const g = groupRef.current;
     if (!g) return;
     const t = clock.elapsedTime;

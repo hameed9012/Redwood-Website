@@ -4,10 +4,12 @@ import { useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { ShaderMaterial, Color, Vector3 } from 'three';
 import { waterVertex, waterFragment } from './shaders/waterSurface.glsl';
+import { useFreeze } from '../puzzle/useFreeze';
 
 export function WaterSurface() {
   const matRef = useRef<ShaderMaterial>(null);
   const { camera } = useThree();
+  const frozen = useFreeze();
 
   const uniforms = useMemo(
     () => ({
@@ -23,6 +25,7 @@ export function WaterSurface() {
   );
 
   useFrame((_, delta) => {
+    if (frozen.current) return;
     const m = matRef.current;
     if (!m) return;
     m.uniforms.uTime.value += delta;

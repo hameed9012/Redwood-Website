@@ -11,6 +11,7 @@ import { useAssetPresence, shouldRenderGlb } from './useOptionalGLTF';
 import { useHoverToRead, RESTING_TILT } from '../useHoverToRead';
 import { stepFloater, type Floater } from '../surface/waterField';
 import { drugFor, type PeakLetter } from '../peak';
+import { useFreeze } from '../puzzle/useFreeze';
 
 interface HeroBottleProps {
   letter: PeakLetter;
@@ -104,6 +105,7 @@ const PEAK_BOUNDS = { x: 9, z: 9 };
 export function HeroBottle({ letter, position, onReady }: HeroBottleProps) {
   const status = useAssetPresence(GLB_PATH[letter]);
   const groupRef = useRef<Group>(null);
+  const frozen = useFreeze();
   const phase = useMemo(() => ({ P: 0.12, E: 0.41, A: 0.68, K: 0.91 }[letter]), [letter]);
 
   // Free-floats like everything else, but starts at its seeded position and never
@@ -124,6 +126,7 @@ export function HeroBottle({ letter, position, onReady }: HeroBottleProps) {
   );
 
   useFrame(({ clock }, delta) => {
+    if (frozen.current) return;
     const g = groupRef.current;
     if (!g) return;
     const tr = stepFloater(floater, clock.elapsedTime, delta, PEAK_BOUNDS);
