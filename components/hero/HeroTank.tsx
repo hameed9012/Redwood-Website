@@ -9,7 +9,7 @@ import { detectTierFromBrowser, qualityFor, type QualityProfile } from './qualit
 import { useFreeze, FreezeBridge } from './puzzle/useFreeze';
 import { usePuzzle, PuzzleBridge } from './puzzle/PuzzleProvider';
 
-export function HeroTank() {
+export function HeroTank({ onDrained }: { onDrained?: () => void } = {}) {
   const puzzle = usePuzzle();
   const registry = puzzle.registry;
   const [quality, setQuality] = useState<QualityProfile>(() => qualityFor('mid'));
@@ -38,7 +38,7 @@ export function HeroTank() {
       <FreezeBridge freezeRef={frozen}>
         <PuzzleBridge value={puzzle}>
           <Environment files={quality.hdriPath} environmentIntensity={1.8} />
-          <TankScene registry={registry} quality={quality} />
+          <TankScene registry={registry} quality={quality} onDrained={onDrained} />
           {/* Lean postprocessing — DepthOfField + ChromaticAberration dropped: profiling
               (R2-11) showed the scene is fill-rate bound at 1920px and DoF was the
               dominant full-screen pass (~16→50 FPS when viewport shrank). Bloom +

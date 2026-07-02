@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import type { DirectionalLight } from 'three';
+import type { DirectionalLight, Group } from 'three';
 import { FieldObjects } from './objects/FieldObjects';
 import { HeroBottles } from './objects/HeroBottles';
 import { OpenBottle } from './objects/OpenBottle';
@@ -16,14 +16,18 @@ import type { PeakRegistry } from './peak';
 import type { QualityProfile } from './quality';
 import { useFreeze } from './puzzle/useFreeze';
 import { useBottleDrag } from './puzzle/useBottleDrag';
+import { DrainSequence } from './puzzle/DrainSequence';
 
 interface TankSceneProps {
   registry: PeakRegistry;
   quality: QualityProfile;
+  /** Fires when the solve-drain finishes (the loading sequence takes over). */
+  onDrained?: () => void;
 }
 
-export function TankScene({ registry, quality }: TankSceneProps) {
+export function TankScene({ registry, quality, onDrained }: TankSceneProps) {
   const sweep = useRef<DirectionalLight>(null);
+  const sceneShift = useRef<Group>(null);
   const frozen = useFreeze();
   useCameraBreathing();
   useBottleDrag();
@@ -58,16 +62,20 @@ export function TankScene({ registry, quality }: TankSceneProps) {
       {/* Static cool fill so bottles read as glass even between sweeps. */}
       <directionalLight position={[-4, 2, 5]} intensity={1.1} color="#8fbfc7" />
 
-      {quality.caustics && <CausticsPlane intensity={0.45} />}
-      <WaterSurface />
-      <BackgroundLogo />
-      <FieldObjects count={quality.bottleCount} />
-      <HeroBottles registry={registry} />
-      <Bubbles count={quality.bubbleCount} />
-      {Array.from({ length: quality.openBottleCount }).map((_, i) => (
-        <OpenBottle key={i} seed={i + 1} position={[(i - 1.5) * 6, 0, (i % 2 ? 4 : -4)]} />
-      ))}
-      <Tanker />
+      {/* Everything that drains sits in one shiftable group (the drain tweens its y). */}
+      <group ref={sceneShift}>
+        {quality.caustics && <CausticsPlane intensity={0.45} />}
+        <WaterSurface />
+        <BackgroundLogo />
+        <FieldObjects count={quality.bottleCount} />
+        <HeroBottles registry={registry} />
+        <Bubbles count={quality.bubbleCount} />
+        {Array.from({ length: quality.openBottleCount }).map((_, i) => (
+          <OpenBottle key={i} seed={i + 1} position={[(i - 1.5) * 6, 0, (i % 2 ? 4 : -4)]} />
+        ))}
+        <Tanker />
+      </group>
+      <DrainSequence sceneShift={sceneShift} onDrained={onDrained} />
     </>
   );
 }

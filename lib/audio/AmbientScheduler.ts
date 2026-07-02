@@ -63,3 +63,20 @@ export class AmbientScheduler {
     this.scheduleNext();
   }
 }
+
+// ---- Active-instance registry ------------------------------------------------
+// Lets scene-side sequences (the Phase 2 drain) cut whatever ambient audio is
+// playing without reaching into the AudioToggle component. Additive — the class
+// API above is unchanged.
+
+let active: AmbientScheduler | null = null;
+
+/** AudioToggle registers its scheduler here (null on unmount). */
+export function registerActiveScheduler(s: AmbientScheduler | null): void {
+  active = s;
+}
+
+/** Immediately silences the active ambient scheduler, if any. */
+export function stopActiveAudio(): void {
+  active?.disable();
+}
