@@ -3,6 +3,7 @@
 import { CopyReveal } from './CopyReveal';
 import { CtaButtons } from './CtaButtons';
 import { AudioToggle } from './AudioToggle';
+import { Tray } from './puzzle/Tray';
 
 export function HeroOverlay() {
   return (
@@ -18,13 +19,8 @@ export function HeroOverlay() {
         <AudioToggle />
       </div>
 
-      {/* Phase 1: discrete drop-tray visual slot only (spec §11). */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 w-44 h-9 rounded-md border border-dashed border-rw-bone/20 flex items-center justify-center text-[9px] tracking-[0.2em] text-rw-bone/30"
-      >
-        DROP TRAY
-      </div>
+      {/* Phase 2: four-slot drop tray overlay (spec §11). Provider wires real state later. */}
+      <Tray slots={[null, null, null, null]} />
     </div>
   );
 }
