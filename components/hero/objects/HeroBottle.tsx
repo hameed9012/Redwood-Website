@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useMemo, Suspense, Component, type ReactNode } from 'react';
 import type { Object3D, Group } from 'three';
-import { CanvasTexture } from 'three';
+import { CanvasTexture, Vector3 } from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import { heroBottleGeometry } from './proceduralBottleGeo';
@@ -12,6 +12,7 @@ import { useHoverToRead, RESTING_TILT } from '../useHoverToRead';
 import { stepFloater, type Floater } from '../surface/waterField';
 import { drugFor, type PeakLetter } from '../peak';
 import { useFreeze } from '../puzzle/useFreeze';
+import { usePuzzleMaybe } from '../puzzle/PuzzleProvider';
 
 interface HeroBottleProps {
   letter: PeakLetter;
@@ -106,6 +107,7 @@ export function HeroBottle({ letter, position, onReady }: HeroBottleProps) {
   const status = useAssetPresence(GLB_PATH[letter]);
   const groupRef = useRef<Group>(null);
   const frozen = useFreeze();
+  const puzzle = usePuzzleMaybe();
   const phase = useMemo(() => ({ P: 0.12, E: 0.41, A: 0.68, K: 0.91 }[letter]), [letter]);
 
   // Free-floats like everything else, but starts at its seeded position and never
@@ -129,6 +131,18 @@ export function HeroBottle({ letter, position, onReady }: HeroBottleProps) {
     if (frozen.current) return;
     const g = groupRef.current;
     if (!g) return;
+
+    const suspend = puzzle?.suspendedRef.current[letter];
+    if (suspend) {
+      const point = suspend === 'grabbed' ? puzzle!.drag.current.target : suspend;
+      g.position.lerp(new Vector3(point.x, point.y, point.z), Math.min(1, delta * 10));
+      g.rotation.set(0, 0, 0);
+      // Keep the floater in sync so, on release, it resumes drifting from here.
+      floater.x = g.position.x;
+      floater.z = g.position.z;
+      return;
+    }
+
     const tr = stepFloater(floater, clock.elapsedTime, delta, PEAK_BOUNDS);
     g.position.set(tr.x, tr.y, tr.z);
     // Gentle roll on Z only; X + yaw stay 0 so the hover tilt (inner group) reads cleanly.

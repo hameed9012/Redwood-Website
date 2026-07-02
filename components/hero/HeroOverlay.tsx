@@ -4,8 +4,10 @@ import { CopyReveal } from './CopyReveal';
 import { CtaButtons } from './CtaButtons';
 import { AudioToggle } from './AudioToggle';
 import { Tray } from './puzzle/Tray';
+import { usePuzzleMaybe } from './puzzle/PuzzleProvider';
 
 export function HeroOverlay() {
+  const puzzle = usePuzzleMaybe();
   return (
     <div className="pointer-events-none absolute inset-0">
       {/* Left-anchored copy (spec §1 composition). */}
@@ -19,8 +21,14 @@ export function HeroOverlay() {
         <AudioToggle />
       </div>
 
-      {/* Phase 2: four-slot drop tray overlay (spec §11). Provider wires real state later. */}
-      <Tray slots={[null, null, null, null]} />
+      {/* Phase 2: four-slot drop tray overlay (spec §11), driven by PuzzleProvider. */}
+      <Tray
+        slots={puzzle?.slots ?? [null, null, null, null]}
+        highlightIndex={puzzle?.highlightIndex ?? -1}
+        onSlotRects={(r) => {
+          if (puzzle) puzzle.slotRectsRef.current = r;
+        }}
+      />
     </div>
   );
 }

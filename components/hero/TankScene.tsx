@@ -15,6 +15,7 @@ import { useCameraBreathing } from './useCameraBreathing';
 import type { PeakRegistry } from './peak';
 import type { QualityProfile } from './quality';
 import { useFreeze } from './puzzle/useFreeze';
+import { useBottleDrag } from './puzzle/useBottleDrag';
 
 interface TankSceneProps {
   registry: PeakRegistry;
@@ -25,6 +26,7 @@ export function TankScene({ registry, quality }: TankSceneProps) {
   const sweep = useRef<DirectionalLight>(null);
   const frozen = useFreeze();
   useCameraBreathing();
+  useBottleDrag();
 
   const { camera } = useThree();
   useEffect(() => {
