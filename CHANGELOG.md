@@ -1,5 +1,28 @@
 # Redwood Peak — Changelog
 
+## v0.2.0 — The Vault Drains
+
+An irregularity has been identified in the retrieval procedure. Four containers, it turns out, can be lifted from the water and arranged. We are not going to tell you which four, or in what order. Frankly, we would prefer you didn't.
+
+### The bottles come out now
+- **Fish one out.** Certain bottles can be picked up — taken right out of the water — and carried to a small row of four slots at the bottom of the frame. Read the labels first. Reading is important at Redwood Peak.
+- **Wrong answers are quietly declined.** Arrange them incorrectly and, after a moment, the bottles simply drift back out to the water. No alarm. No message. The water keeps no record. Neither do we.
+- **Almost is a feeling.** Get three of four right and something in the depths flickers, briefly. Probably the light. Almost certainly the light.
+
+### What happens if you get it right
+- **Everything stops.** The water, the bottles, the bubbles, the light. All of it. Still.
+- **Then the water leaves.** The tank drains out from underneath you, and you go down with it. This was not designed to feel like winning. It was designed to feel like being somewhere you shouldn't be.
+- **A brief intermission.** The company mark turns while some genuinely educational chemistry and physics facts rotate beneath it. Most of them are about ice and helium. Most of them.
+- **A door.** It ends at Employee Access. Credentials are issued out-of-band. If you don't know yours, you were not meant to.
+
+### Housekeeping
+- **Once per visit.** Solve it once and the session remembers; a reload won't drag you back through the drain. A fresh session starts fresh. The water refills. It always refills.
+
+### A note for the people who find it
+if you get all the way to the door, tell us *what you dragged and what happened* — that's the most useful thing you can send us. And if a bottle refuses to leave the water, it may simply know something you don't.
+
+---
+
 ## v0.1.1 — Surfacing
 
 We have adjusted the vantage point. You are now looking *down* at the water, as one does from a dock, or a bridge, or the deck of a vessel you would prefer not to name. Management considers this the correct angle. Please do not lean over the railing.
