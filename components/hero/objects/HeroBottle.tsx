@@ -109,6 +109,8 @@ export function HeroBottle({ letter, position, onReady }: HeroBottleProps) {
   const frozen = useFreeze();
   const puzzle = usePuzzleMaybe();
   const phase = useMemo(() => ({ P: 0.12, E: 0.41, A: 0.68, K: 0.91 }[letter]), [letter]);
+  // Scratch vector reused every frame (no per-frame allocation in the lerp path).
+  const lerpTarget = useMemo(() => new Vector3(), []);
 
   // Free-floats like everything else, but starts at its seeded position and never
   // spins on Y — so the hover tilt reliably brings its label up to the camera.
@@ -135,7 +137,7 @@ export function HeroBottle({ letter, position, onReady }: HeroBottleProps) {
     const suspend = puzzle?.suspendedRef.current[letter];
     if (suspend) {
       const point = suspend === 'grabbed' ? puzzle!.drag.current.target : suspend;
-      g.position.lerp(new Vector3(point.x, point.y, point.z), Math.min(1, delta * 10));
+      g.position.lerp(lerpTarget.set(point.x, point.y, point.z), Math.min(1, delta * 10));
       g.rotation.set(0, 0, 0);
       // Keep the floater in sync so, on release, it resumes drifting from here.
       floater.x = g.position.x;

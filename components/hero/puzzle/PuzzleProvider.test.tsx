@@ -74,8 +74,7 @@ describe('PuzzleProvider', () => {
       place('E', 1);
       place('K', 2);
       place('A', 3);
-      // flush the queueMicrotask that triggers check()
-      vi.advanceTimersByTime(0);
+      // check() runs synchronously inside placeInSlot when the 4th slot fills
     });
 
     expect(screen.getByTestId('phase').textContent).toBe('checking');

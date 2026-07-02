@@ -5,6 +5,7 @@ import {
   createElement,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useReducer,
   useRef,
@@ -53,6 +54,15 @@ export function PuzzleProvider({ children }: { children: ReactNode }) {
   const drag = useRef<DragState>({ grabbed: null, target: { x: 0, y: 1.1, z: 0 } });
   const suspendedRef = useRef<Partial<Record<PeakLetter, SuspendPoint>>>({});
   const slotsRef = useRef(slots);
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Don't let a pending wrong-order reset fire against an unmounted provider.
+  useEffect(
+    () => () => {
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    },
+    [],
+  );
 
   const setHighlightIndex = useCallback((i: number) => {
     setHighlightIndexState((prev) => (prev === i ? prev : i));
@@ -65,7 +75,9 @@ export function PuzzleProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'checked', solved, nearMiss });
 
     if (!solved) {
-      setTimeout(() => {
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = setTimeout(() => {
+        resetTimerRef.current = null;
         const empty = Array(SLOT_COUNT).fill(null);
         slotsRef.current = empty;
         setSlots(empty);
