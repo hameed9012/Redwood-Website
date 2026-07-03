@@ -30,7 +30,7 @@ export function Tray({ slots, highlightIndex = -1, onSlotRects }: TrayProps) {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2"
+      className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-3"
     >
       {slots.map((letter, i) => (
         <div
@@ -39,11 +39,11 @@ export function Tray({ slots, highlightIndex = -1, onSlotRects }: TrayProps) {
           data-testid="tray-slot"
           data-filled={letter !== null ? 'true' : 'false'}
           data-highlight={i === highlightIndex ? 'true' : 'false'}
-          className={`flex h-12 w-12 items-center justify-center rounded-md border border-dashed transition-colors duration-150 ${
+          className={`flex h-16 w-16 items-center justify-center rounded-md border border-dashed transition-colors duration-150 ${
             i === highlightIndex ? 'border-rw-red/80 bg-rw-red/10' : 'border-rw-bone/20'
           }`}
         >
-          {letter !== null && <span className="h-2.5 w-2.5 rounded-full bg-rw-red/80" />}
+          {letter !== null && <span className="h-3 w-3 rounded-full bg-rw-red/80" />}
         </div>
       ))}
     </div>

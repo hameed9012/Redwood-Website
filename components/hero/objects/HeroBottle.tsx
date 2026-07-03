@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useMemo, Suspense, Component, type ReactNode } from 'react';
+import { useRef, useEffect, useMemo, Suspense, Component, type ReactNode, type RefObject } from 'react';
 import type { Object3D, Group } from 'three';
 import { CanvasTexture, Vector3 } from 'three';
 import { useFrame } from '@react-three/fiber';
@@ -47,15 +47,15 @@ function BottleLabel({ text }: { text: string }) {
   const texture = useMemo(() => {
     if (typeof document === 'undefined') return null;
     const c = document.createElement('canvas');
-    c.width = 256; c.height = 64;
+    c.width = 512; c.height = 128;
     const ctx = c.getContext('2d');
     if (!ctx) return null; // jsdom / no 2d context → no label (test-safe)
-    ctx.clearRect(0, 0, 256, 64);
+    ctx.clearRect(0, 0, 512, 128);
     ctx.fillStyle = '#f5f5f4';
-    ctx.font = 'bold 34px sans-serif';
+    ctx.font = 'bold 64px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, 128, 32);
+    ctx.fillText(text, 256, 64);
     const t = new CanvasTexture(c);
     t.needsUpdate = true;
     return t;
@@ -63,10 +63,32 @@ function BottleLabel({ text }: { text: string }) {
   if (!texture) return null;
   return (
     <mesh position={[0, 0, 0.34]}>
-      <planeGeometry args={[0.5, 0.16]} />
+      <planeGeometry args={[0.95, 0.24]} />
       <meshBasicMaterial map={texture} transparent depthWrite={false} />
     </mesh>
   );
+}
+
+/** Shared hover wiring: tilt-to-read + the DOM name chip, suppressed while this bottle is being carried. */
+function useBottleHover(letter: PeakLetter, ref: RefObject<Group>) {
+  const { onPointerOver, onPointerOut } = useHoverToRead();
+  const puzzle = usePuzzleMaybe();
+  const isGrabbed = () => puzzle?.drag.current.grabbed === letter;
+  return {
+    over: (e: { stopPropagation: () => void }) => {
+      e.stopPropagation();
+      if (ref.current) onPointerOver(ref.current);
+      puzzle?.setHoveredLetter(letter);
+    },
+    out: (e: { stopPropagation: () => void }) => {
+      e.stopPropagation();
+      // While carried, the pointer constantly enters/leaves the moving bottle —
+      // don't yank the tilt or the name chip mid-drag.
+      if (isGrabbed()) return;
+      if (ref.current) onPointerOut(ref.current);
+      puzzle?.setHoveredLetter(null);
+    },
+  };
 }
 
 function ProceduralBottle({ letter, onReady }: { letter: PeakLetter; onReady: HeroBottleProps['onReady'] }) {
@@ -74,12 +96,10 @@ function ProceduralBottle({ letter, onReady }: { letter: PeakLetter; onReady: He
   const geometry = useMemo(() => heroBottleGeometry(), []);
   const material = useMemo(() => createGlassMaterial(), []);
   const drug = useMemo(() => drugFor(letter), [letter]);
-  const { onPointerOver, onPointerOut } = useHoverToRead();
+  const hover = useBottleHover(letter, ref);
   useEffect(() => { if (ref.current) onReady(letter, ref.current); }, [letter, onReady]);
   return (
-    <group ref={ref} rotation={[RESTING_TILT, 0, 0]}
-      onPointerOver={(e) => { e.stopPropagation(); if (ref.current) onPointerOver(ref.current); }}
-      onPointerOut={(e) => { e.stopPropagation(); if (ref.current) onPointerOut(ref.current); }}>
+    <group ref={ref} rotation={[RESTING_TILT, 0, 0]} onPointerOver={hover.over} onPointerOut={hover.out}>
       <mesh geometry={geometry} material={material} />
       <BottleLabel text={drug} />
     </group>
@@ -89,12 +109,10 @@ function ProceduralBottle({ letter, onReady }: { letter: PeakLetter; onReady: He
 function GlbBottle({ letter, path, onReady }: { letter: PeakLetter; path: string; onReady: HeroBottleProps['onReady'] }) {
   const { scene } = useGLTF(path) as unknown as { scene: Group };
   const ref = useRef<Group>(null);
-  const { onPointerOver, onPointerOut } = useHoverToRead();
+  const hover = useBottleHover(letter, ref);
   useEffect(() => { if (ref.current) onReady(letter, ref.current); }, [letter, onReady]);
   return (
-    <group ref={ref} rotation={[RESTING_TILT, 0, 0]}
-      onPointerOver={(e) => { e.stopPropagation(); if (ref.current) onPointerOver(ref.current); }}
-      onPointerOut={(e) => { e.stopPropagation(); if (ref.current) onPointerOut(ref.current); }}>
+    <group ref={ref} rotation={[RESTING_TILT, 0, 0]} onPointerOver={hover.over} onPointerOut={hover.out}>
       <primitive object={scene} />
     </group>
   );
@@ -129,6 +147,11 @@ export function HeroBottle({ letter, position, onReady }: HeroBottleProps) {
     [letter], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
+  // Smooths the hand-off between carried and floating: on release the bottle
+  // eases back down to the water instead of teleporting (the "bugs down" snap).
+  const wasSuspended = useRef(false);
+  const dropOffset = useRef(0);
+
   useFrame(({ clock }, delta) => {
     if (frozen.current) return;
     const g = groupRef.current;
@@ -136,9 +159,12 @@ export function HeroBottle({ letter, position, onReady }: HeroBottleProps) {
 
     const suspend = puzzle?.suspendedRef.current[letter];
     if (suspend) {
+      wasSuspended.current = true;
       const point = suspend === 'grabbed' ? puzzle!.drag.current.target : suspend;
-      g.position.lerp(lerpTarget.set(point.x, point.y, point.z), Math.min(1, delta * 10));
-      g.rotation.set(0, 0, 0);
+      g.position.lerp(lerpTarget.set(point.x, point.y, point.z), Math.min(1, delta * 8));
+      // Ease the drift roll out instead of snapping upright in one frame.
+      g.rotation.z += (0 - g.rotation.z) * Math.min(1, delta * 6);
+      g.rotation.y += (0 - g.rotation.y) * Math.min(1, delta * 6);
       // Keep the floater in sync so, on release, it resumes drifting from here.
       floater.x = g.position.x;
       floater.z = g.position.z;
@@ -146,7 +172,20 @@ export function HeroBottle({ letter, position, onReady }: HeroBottleProps) {
     }
 
     const tr = stepFloater(floater, clock.elapsedTime, delta, PEAK_BOUNDS);
-    g.position.set(tr.x, tr.y, tr.z);
+
+    if (wasSuspended.current) {
+      // Just released: carry the height difference as a decaying offset so the
+      // bottle settles onto the water instead of jumping to it.
+      wasSuspended.current = false;
+      dropOffset.current = g.position.y - tr.y;
+    }
+    if (Math.abs(dropOffset.current) > 0.001) {
+      dropOffset.current *= Math.max(0, 1 - delta * 4);
+    } else {
+      dropOffset.current = 0;
+    }
+
+    g.position.set(tr.x, tr.y + dropOffset.current, tr.z);
     // Gentle roll on Z only; X + yaw stay 0 so the hover tilt (inner group) reads cleanly.
     g.rotation.set(0, 0, tr.tiltZ * 0.6);
   });

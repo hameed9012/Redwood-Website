@@ -32,6 +32,9 @@ export interface PuzzleContextValue {
   slots: (PeakLetter | null)[];
   highlightIndex: number;
   setHighlightIndex: (i: number) => void;
+  /** Bottle currently hovered or held — drives the readable DOM name chip. */
+  hoveredLetter: PeakLetter | null;
+  setHoveredLetter: (l: PeakLetter | null) => void;
   slotRectsRef: MutableRefObject<DOMRect[]>;
   drag: MutableRefObject<DragState>;
   suspendedRef: MutableRefObject<Partial<Record<PeakLetter, SuspendPoint>>>;
@@ -49,6 +52,7 @@ export function PuzzleProvider({ children }: { children: ReactNode }) {
   const [phase, dispatch] = useReducer(puzzleReducer, 'idle' as PuzzlePhase);
   const [slots, setSlots] = useState<(PeakLetter | null)[]>(() => Array(SLOT_COUNT).fill(null));
   const [highlightIndex, setHighlightIndexState] = useState(-1);
+  const [hoveredLetter, setHoveredLetterState] = useState<PeakLetter | null>(null);
 
   const slotRectsRef = useRef<DOMRect[]>([]);
   const drag = useRef<DragState>({ grabbed: null, target: { x: 0, y: 1.1, z: 0 } });
@@ -66,6 +70,10 @@ export function PuzzleProvider({ children }: { children: ReactNode }) {
 
   const setHighlightIndex = useCallback((i: number) => {
     setHighlightIndexState((prev) => (prev === i ? prev : i));
+  }, []);
+
+  const setHoveredLetter = useCallback((l: PeakLetter | null) => {
+    setHoveredLetterState((prev) => (prev === l ? prev : l));
   }, []);
 
   const check = useCallback(() => {
@@ -112,6 +120,8 @@ export function PuzzleProvider({ children }: { children: ReactNode }) {
     slots,
     highlightIndex,
     setHighlightIndex,
+    hoveredLetter,
+    setHoveredLetter,
     slotRectsRef,
     drag,
     suspendedRef,
