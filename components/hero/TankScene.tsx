@@ -17,6 +17,8 @@ import { useFreeze } from './puzzle/useFreeze';
 import { useBottleDrag } from './puzzle/useBottleDrag';
 import { DrainSequence } from './puzzle/DrainSequence';
 import { useScrollDive, DiveProgressProvider } from '../dive/useScrollDive';
+import { DeepWorld } from '../deep/DeepWorld';
+import { DeepAtmosphere } from '../deep/DeepAtmosphere';
 
 interface TankSceneProps {
   registry: PeakRegistry;
@@ -28,6 +30,7 @@ interface TankSceneProps {
 export function TankScene({ registry, quality, onDrained }: TankSceneProps) {
   const sweep = useRef<DirectionalLight>(null);
   const sceneShift = useRef<Group>(null);
+  const surfaceDecor = useRef<Group>(null);
   const frozen = useFreeze();
   // The dive owns the camera now (surface pose at scroll-top → submerged at depth),
   // folding in the old top-down breathing drift. Drag is gated to the surface.
@@ -63,14 +66,21 @@ export function TankScene({ registry, quality, onDrained }: TankSceneProps) {
         {quality.caustics && <CausticsPlane intensity={0.45} />}
         <WaterSurface />
         <BackgroundLogo />
-        <FieldObjects count={quality.bottleCount} />
         <HeroBottles registry={registry} />
         <Bubbles count={quality.bubbleCount} />
-        {Array.from({ length: quality.openBottleCount }).map((_, i) => (
-          <OpenBottle key={i} seed={i + 1} position={[(i - 1.5) * 6, 0, (i % 2 ? 4 : -4)]} />
-        ))}
-        <Tanker />
+        {/* Surface-only decor: hidden by DeepAtmosphere as the dive descends so
+            loose bottles / the tanker don't float, wrongly, in the deep. */}
+        <group ref={surfaceDecor}>
+          <FieldObjects count={quality.bottleCount} />
+          {Array.from({ length: quality.openBottleCount }).map((_, i) => (
+            <OpenBottle key={i} seed={i + 1} position={[(i - 1.5) * 6, 0, (i % 2 ? 4 : -4)]} />
+          ))}
+          <Tanker />
+        </group>
+        {/* The submerged world, revealed by the dive (spec §3). */}
+        <DeepWorld surfaceBottleCount={quality.bottleCount} />
       </group>
+      <DeepAtmosphere surfaceDecor={surfaceDecor} />
       <DrainSequence sceneShift={sceneShift} onDrained={onDrained} />
     </DiveProgressProvider>
   );
