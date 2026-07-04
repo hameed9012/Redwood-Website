@@ -7,6 +7,10 @@ import { HeroOverlay } from './HeroOverlay';
 import { FreezeProvider } from './puzzle/useFreeze';
 import { PuzzleProvider } from './puzzle/PuzzleProvider';
 import { LoadingScreen } from '../loading/LoadingScreen';
+import { HistorySection } from '../sections/HistorySection';
+import { ServicesSection } from '../sections/ServicesSection';
+import { MediaCarousel } from '../sections/MediaCarousel';
+import { ContactSection } from '../sections/ContactSection';
 import { markSolved } from '@/lib/session';
 
 // WebGL must not run during SSR.
@@ -42,9 +46,16 @@ export function Hero() {
           <HeroOverlay />
         </section>
 
-        {/* The dive region: pure scroll distance (~2.2 viewports) that maps to the
-            surface→deep camera transition. Public sections land below it (P3-9+). */}
-        <div aria-hidden data-dive-region className="h-[220svh]" />
+        {/* Dive-intro: a stretch of pure descent into the deepening water before the
+            first section surfaces. Dive progress maps to the WHOLE document scroll,
+            so this spacer plus the sections below set the descent's length/pacing. */}
+        <div aria-hidden data-dive-region className="h-[120svh]" />
+
+        {/* Public sections — revealed as the camera sinks past them (spec §4). */}
+        <HistorySection />
+        <ServicesSection />
+        <MediaCarousel />
+        <ContactSection />
 
         {drained && <LoadingScreen onComplete={handleLoadingComplete} />}
       </PuzzleProvider>

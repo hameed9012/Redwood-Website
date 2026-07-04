@@ -7,29 +7,15 @@ import { breathingOffset } from '../hero/useCameraBreathing';
 import { useFreeze } from '../hero/puzzle/useFreeze';
 
 /**
- * The dive begins on the first scroll and completes at the page bottom. The
- * page's max scrollY is exactly DIVE_VH viewports (100svh hero + 220svh dive
- * spacer − one viewport), so progress reaches 1 precisely at the bottom — no
- * dead zone, no unreachable tail. Keep this in sync with Hero's spacer height.
+ * Pure scroll→dive-progress mapping (tested): the descent spans the ENTIRE
+ * document scroll — 0 at the very top (surface), 1 at the very bottom (deep) —
+ * so each public section, wherever it sits in the flow, gets a natural depth and
+ * "reveals as the camera sinks past it" (spec §2). Robust to content height: add
+ * or resize a section and the mapping still spans exactly the whole page.
  */
-export const HERO_VH = 0;
-export const DIVE_VH = 2.2;
-
-/**
- * Pure scroll→dive-progress mapping (tested). 0 at the top (surface), ramps to
- * 1 across the dive region, clamped. Kept pure so the camera hook stays a thin
- * adapter over this and the tested `divePose`.
- */
-export function diveProgressFromScroll(
-  scrollY: number,
-  viewportH: number,
-  heroVh = HERO_VH,
-  diveVh = DIVE_VH,
-): number {
-  const len = diveVh * viewportH;
-  if (len <= 0) return 0;
-  const start = heroVh * viewportH;
-  return Math.min(1, Math.max(0, (scrollY - start) / len));
+export function diveProgressFromScroll(scrollY: number, maxScroll: number): number {
+  if (maxScroll <= 0) return 0;
+  return Math.min(1, Math.max(0, scrollY / maxScroll));
 }
 
 /** Descendants inside the canvas read live dive progress (0..1) from this ref. */
@@ -55,9 +41,10 @@ export function useScrollDive(): MutableRefObject<number> {
 
   useFrame(({ clock }) => {
     if (frozen.current) return;
-    const vh = typeof window !== 'undefined' ? window.innerHeight : 1;
+    const doc = typeof document !== 'undefined' ? document.documentElement : null;
+    const maxScroll = doc ? doc.scrollHeight - window.innerHeight : 0;
     const sy = typeof window !== 'undefined' ? window.scrollY : 0;
-    const p = diveProgressFromScroll(sy, vh);
+    const p = diveProgressFromScroll(sy, maxScroll);
     progress.current = p;
 
     const pose = divePose(p);
