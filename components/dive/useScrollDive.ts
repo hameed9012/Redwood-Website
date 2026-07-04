@@ -6,14 +6,19 @@ import { divePose } from './divePath';
 import { breathingOffset } from '../hero/useCameraBreathing';
 import { useFreeze } from '../hero/puzzle/useFreeze';
 
-/** Hero occupies 1 viewport; the dive spans the next ~2.2 (matches Hero's spacer). */
-export const HERO_VH = 1;
+/**
+ * The dive begins on the first scroll and completes at the page bottom. The
+ * page's max scrollY is exactly DIVE_VH viewports (100svh hero + 220svh dive
+ * spacer − one viewport), so progress reaches 1 precisely at the bottom — no
+ * dead zone, no unreachable tail. Keep this in sync with Hero's spacer height.
+ */
+export const HERO_VH = 0;
 export const DIVE_VH = 2.2;
 
 /**
- * Pure scroll→dive-progress mapping (tested). 0 while the hero fills the screen,
- * ramps to 1 across the dive region, clamped. Kept pure so the camera hook stays
- * a thin adapter over this and the tested `divePose`.
+ * Pure scroll→dive-progress mapping (tested). 0 at the top (surface), ramps to
+ * 1 across the dive region, clamped. Kept pure so the camera hook stays a thin
+ * adapter over this and the tested `divePose`.
  */
 export function diveProgressFromScroll(
   scrollY: number,
