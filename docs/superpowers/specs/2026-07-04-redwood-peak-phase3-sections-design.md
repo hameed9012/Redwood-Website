@@ -1,7 +1,7 @@
 # Redwood Peak — Phase 3: Public Sections + The Dive — Design Spec
 
 **Date:** 2026-07-04
-**Status:** Draft — pending approval before planning.
+**Status:** Approved — decisions locked (§7); ready for planning.
 **Scope:** Phase 3 of 7. Builds on the Phase 1 surface hero and the Phase 2 puzzle. Includes the
 submerged view + scroll-dive **deferred from Phase 1 R2** (spec §11–§12 forward references). Phases
 4–7 out of scope except seams.
@@ -154,10 +154,11 @@ degrade gracefully (still show the ref number; log the failure) so the theatre n
   still fully playable; solve → drain → login unaffected.
 - v0.3.0 changelog in the deadpan voice.
 
-## 7. Open questions (need your call at review)
-1. **Supabase now or shim?** Do you have/want to create the Supabase project now (you'd paste the two
-   env values into `.env.local`)? If not, we build against the graceful no-env shim and wire real
-   creds when you have them — zero code change later.
-2. **Dive length:** how long should the dive take (scroll distance between hero and first section)?
-   Baseline: ~1.5 viewport-heights of scroll for the full surface→deep transition.
+## 7. Decisions (locked at review)
+1. **Supabase — shim-first (DECIDED).** Build against the graceful no-env shim now; the form works
+   visually with or without creds. Ship `supabase/schema.sql` ready to paste. The user wires real
+   `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` into `.env.local` whenever convenient —
+   zero code change; inserts go live the moment the env vars exist. Building is NOT gated on the account.
+2. **Dive length — longer (DECIDED).** ~2.2 viewport-heights of scroll for the full surface→deep
+   transition (up from the 1.5 baseline) so the descent breathes.
 ```
