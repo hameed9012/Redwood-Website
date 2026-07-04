@@ -38,7 +38,7 @@ export interface PuzzleContextValue {
   slotRectsRef: MutableRefObject<DOMRect[]>;
   drag: MutableRefObject<DragState>;
   suspendedRef: MutableRefObject<Partial<Record<PeakLetter, SuspendPoint>>>;
-  placeInSlot: (letter: PeakLetter, slot: number) => void;
+  placeInSlot: (letter: PeakLetter, slot: number, point?: { x: number; y: number; z: number }) => void;
   release: (letter: PeakLetter) => void;
   check: () => void;
 }
@@ -98,9 +98,12 @@ export function PuzzleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const placeInSlot = useCallback(
-    (letter: PeakLetter, slot: number) => {
+    // `point` (when given) is the DOM slot's centre unprojected onto the water
+    // by the drag hook — it matches the visible tray at any viewport size. The
+    // hardcoded slotWorldPosition is only the no-camera fallback (tests).
+    (letter: PeakLetter, slot: number, point?: { x: number; y: number; z: number }) => {
       const [x, y, z] = slotWorldPosition(slot);
-      suspendedRef.current[letter] = { x, y, z };
+      suspendedRef.current[letter] = point ?? { x, y, z };
       const next = slotsRef.current.slice();
       next[slot] = letter;
       slotsRef.current = next;

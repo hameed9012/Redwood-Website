@@ -11,6 +11,8 @@ const GROUND_PLANE = new Plane(new Vector3(0, 1, 0), 0);
 const GRAB_HEIGHT = 1.1;
 /** Forgiving slot hitboxes — the dragged bottle visually trails the cursor. */
 const SLOT_HIT_MARGIN_PX = 32;
+/** Height a parked bottle sits at, clear of the waves. Plane constant is -y. */
+const PARK_PLANE = new Plane(new Vector3(0, 1, 0), -0.4);
 
 /** Walk up from a raycast hit to find which registered top-level object it belongs to. */
 function resolveLetter(hit: Object3D, entries: { letter: PeakLetter; object: Object3D }[]): PeakLetter | null {
@@ -54,6 +56,29 @@ export function useBottleDrag(): void {
       const hit = new Vector3();
       const hasHit = raycasterRef.current.ray.intersectPlane(GROUND_PLANE, hit);
       return hasHit ? hit : null;
+    };
+
+    /**
+     * Where a bottle parked in slot `idx` must sit in the WORLD so that it
+     * projects exactly onto the visible DOM slot box: unproject the slot's
+     * screen centre through the camera onto the park plane. This is what keeps
+     * parked bottles ON the boxes at any viewport size (hardcoded world slots
+     * only lined up at one particular window size).
+     */
+    const slotWorldPoint = (idx: number): { x: number; y: number; z: number } | null => {
+      const r = puzzle.slotRectsRef.current[idx];
+      if (!r) return null;
+      const rect = el.getBoundingClientRect();
+      const cx = (r.left + r.right) / 2;
+      const cy = (r.top + r.bottom) / 2;
+      const ndc = new Vector2(
+        ((cx - rect.left) / rect.width) * 2 - 1,
+        -((cy - rect.top) / rect.height) * 2 + 1,
+      );
+      raycasterRef.current.setFromCamera(ndc, camera);
+      const hit = new Vector3();
+      if (!raycasterRef.current.ray.intersectPlane(PARK_PLANE, hit)) return null;
+      return { x: hit.x, y: hit.y, z: hit.z };
     };
 
     /** Screen (client px) position of the grabbed bottle — the fallback drop test. */
@@ -124,7 +149,7 @@ export function useBottleDrag(): void {
       }
 
       if (idx >= 0 && puzzle.slots[idx] === null) {
-        puzzle.placeInSlot(grabbed, idx);
+        puzzle.placeInSlot(grabbed, idx, slotWorldPoint(idx) ?? undefined);
       } else {
         puzzle.release(grabbed);
       }
