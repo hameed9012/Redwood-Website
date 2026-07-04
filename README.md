@@ -18,6 +18,27 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
+## Contact form storage (Supabase) — optional
+
+The contact form works out of the box in **visual-only mode**: it shows an
+`Inquiry #RW-XXXXX logged` reference but does not persist anything. To store
+submissions for real:
+
+1. Create a free Supabase project.
+2. In the Supabase SQL editor, run [`supabase/schema.sql`](supabase/schema.sql)
+   (creates `contact_inquiries` with row-level security on and an anon
+   **insert-only** policy — the public key can add rows but never read them back).
+3. Create `.env.local` (gitignored) with your project's values:
+
+   ```bash
+   NEXT_PUBLIC_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR-ANON-KEY
+   ```
+
+4. Restart the dev server. Submissions now insert into `contact_inquiries` —
+   **no code changes required**. The Supabase client is loaded on demand at
+   submit time, so it stays out of the initial page bundle.
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More

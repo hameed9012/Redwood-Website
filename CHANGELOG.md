@@ -1,5 +1,28 @@
 # Redwood Peak — Changelog
 
+## v0.3.0 — The Descent
+
+The surface, it turns out, was only the top of it. Scroll down and you do not scroll — you sink. Management has made the lower floors available for viewing. We ask only that you keep your hands inside the frame.
+
+### Down you go
+- **Scrolling is descending.** The water is no longer a picture at the top of a page. It fills the whole screen and stays there, and as you scroll the camera tips over and drops beneath the surface, down through the cold and into the deep. It takes a while. It is meant to.
+- **There is something down there.** Fish, for one — dark and unbothered, drifting past on their own business. A scatter of bottles we did not account for. And, resting on the bed near the company mark, a few long boxes. We would rather you not ask about the boxes.
+- **The puzzle stays up top.** Arranging the four containers is a surface activity. Scroll back up to the light if you want to try the door again; you cannot solve anything from the bottom.
+
+### The lower floors
+- **Who we are.** Our history types itself out for you, the first time you reach it. A multi-million dollar medical company, founded October 2024, present — we like to think — in every supply chain that matters. Some of the companies we operate are easier to name than others.
+- **What we do.** Three lines of business: Pharmaceutical Supply, Logistics, and a genuinely lovely camping store on Valley Drive. Wholesale and contract inquiries only.
+- **In the community.** A rotating record of our good works — riverbank cleanups, the food trucks, the fleet. One or two lines have been redacted for reasons that are not important. You may read them if your eyes are good.
+- **A way to reach us.** Leave a Discord name and, if you like, a message. You will receive an inquiry number. Someone establishes that it is real. Someone always does.
+
+### Housekeeping
+- **The record is kept elsewhere now.** Inquiries are written down — properly, this time, to a real ledger — though the browser is permitted only to add to it, never to read it back. What goes in does not come out. Company policy.
+
+### A note for the people who go all the way down
+if you reach the boxes, you have gone far enough. Tell us what you found on the way. We are always interested in what people notice.
+
+---
+
 ## v0.2.0 — The Vault Drains
 
 An irregularity has been identified in the retrieval procedure. Four containers, it turns out, can be lifted from the water and arranged. We are not going to tell you which four, or in what order. Frankly, we would prefer you didn't.
