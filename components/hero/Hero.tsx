@@ -27,14 +27,27 @@ export function Hero() {
   }, [router]);
 
   return (
-    <section className="relative w-full h-[100svh] overflow-hidden bg-rw-black">
-      <FreezeProvider>
-        <PuzzleProvider>
+    <FreezeProvider>
+      <PuzzleProvider>
+        {/* Fixed full-viewport WebGL background. It persists through the entire
+            page scroll — scrolling down drives the camera from the top-down
+            surface into the submerged deep (the dive). alpha:false makes it
+            opaque, so everything layered above must stay transparent to see it. */}
+        <div className="fixed inset-0 -z-10 bg-rw-black">
           <HeroTank onDrained={handleDrained} />
+        </div>
+
+        {/* Hero overlay, pinned to the first viewport; scrolls away as you dive. */}
+        <section className="relative w-full h-[100svh] overflow-hidden">
           <HeroOverlay />
-        </PuzzleProvider>
-      </FreezeProvider>
-      {drained && <LoadingScreen onComplete={handleLoadingComplete} />}
-    </section>
+        </section>
+
+        {/* The dive region: pure scroll distance (~2.2 viewports) that maps to the
+            surface→deep camera transition. Public sections land below it (P3-9+). */}
+        <div aria-hidden data-dive-region className="h-[220svh]" />
+
+        {drained && <LoadingScreen onComplete={handleLoadingComplete} />}
+      </PuzzleProvider>
+    </FreezeProvider>
   );
 }

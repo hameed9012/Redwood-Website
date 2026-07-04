@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import type { DirectionalLight, Group } from 'three';
 import { FieldObjects } from './objects/FieldObjects';
 import { HeroBottles } from './objects/HeroBottles';
@@ -11,12 +11,12 @@ import { CausticsPlane } from './CausticsPlane';
 import { BackgroundLogo } from './BackgroundLogo';
 import { Tanker } from './scenery/Tanker';
 import { WaterSurface } from './surface/WaterSurface';
-import { useCameraBreathing } from './useCameraBreathing';
 import type { PeakRegistry } from './peak';
 import type { QualityProfile } from './quality';
 import { useFreeze } from './puzzle/useFreeze';
 import { useBottleDrag } from './puzzle/useBottleDrag';
 import { DrainSequence } from './puzzle/DrainSequence';
+import { useScrollDive, DiveProgressProvider } from '../dive/useScrollDive';
 
 interface TankSceneProps {
   registry: PeakRegistry;
@@ -29,14 +29,10 @@ export function TankScene({ registry, quality, onDrained }: TankSceneProps) {
   const sweep = useRef<DirectionalLight>(null);
   const sceneShift = useRef<Group>(null);
   const frozen = useFreeze();
-  useCameraBreathing();
-  useBottleDrag();
-
-  const { camera } = useThree();
-  useEffect(() => {
-    camera.up.set(0, 0, -1);
-    camera.lookAt(0, 0, 0);
-  }, [camera]);
+  // The dive owns the camera now (surface pose at scroll-top → submerged at depth),
+  // folding in the old top-down breathing drift. Drag is gated to the surface.
+  const diveProgress = useScrollDive();
+  useBottleDrag(diveProgress);
 
   // Slow cold light sweep on a 20–30s cycle (spec §6.5).
   // Orbits above the XZ surface and aims straight down at the center for the top-down camera.
@@ -51,7 +47,7 @@ export function TankScene({ registry, quality, onDrained }: TankSceneProps) {
   });
 
   return (
-    <>
+    <DiveProgressProvider value={diveProgress}>
       <color attach="background" args={['#050a0c']} />
       {/* Depth fog scoped to the tank (spec §6.4). */}
       <fogExp2 attach="fog" args={['#0a1518', 0.05]} />
@@ -76,6 +72,6 @@ export function TankScene({ registry, quality, onDrained }: TankSceneProps) {
         <Tanker />
       </group>
       <DrainSequence sceneShift={sceneShift} onDrained={onDrained} />
-    </>
+    </DiveProgressProvider>
   );
 }

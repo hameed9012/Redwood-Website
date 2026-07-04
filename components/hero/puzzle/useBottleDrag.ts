@@ -1,11 +1,14 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type MutableRefObject } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Raycaster, Vector2, Plane, Vector3, type Object3D } from 'three';
 import { usePuzzleMaybe } from './PuzzleProvider';
 import { screenSlotIndex } from './trayGeometry';
 import type { PeakLetter } from '../peak';
+
+/** Past this dive progress, the tray has scrolled away — grabbing is disabled. */
+const DRAG_MAX_DIVE = 0.02;
 
 const GROUND_PLANE = new Plane(new Vector3(0, 1, 0), 0);
 const GRAB_HEIGHT = 1.1;
@@ -31,7 +34,7 @@ function resolveLetter(hit: Object3D, entries: { letter: PeakLetter; object: Obj
  * PuzzleProvider (usePuzzleMaybe() === null) — safe to call unconditionally
  * from TankScene.
  */
-export function useBottleDrag(): void {
+export function useBottleDrag(diveProgress?: MutableRefObject<number>): void {
   const puzzle = usePuzzleMaybe();
   const { gl, camera } = useThree();
 
@@ -98,6 +101,9 @@ export function useBottleDrag(): void {
     const onPointerDown = (e: PointerEvent) => {
       if (puzzle.phase !== 'idle') return;
       if (puzzle.drag.current.grabbed) return;
+      // Once the dive has begun the tray has scrolled off — solving is a
+      // surface activity, so don't let a click into the deep grab a bottle.
+      if (diveProgress && diveProgress.current > DRAG_MAX_DIVE) return;
 
       const ndc = ndcFromEvent(e);
       raycasterRef.current.setFromCamera(ndc, camera);
