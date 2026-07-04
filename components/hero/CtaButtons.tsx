@@ -18,7 +18,7 @@ function useStamp() {
 export function CtaButtons() {
   const join = useStamp();
   return (
-    <div className="flex gap-3 mt-6">
+    <div className="pointer-events-auto flex gap-3 mt-6">
       <a
         href={DISCORD_INVITE_URL}
         target="_blank"

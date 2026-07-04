@@ -12,8 +12,11 @@ export function HeroOverlay() {
   const hovered = puzzle?.hoveredLetter ?? null;
   return (
     <div className="pointer-events-none absolute inset-0">
-      {/* Left-anchored copy (spec §1 composition). */}
-      <div className="pointer-events-auto absolute left-8 md:left-16 top-1/2 -translate-y-1/2 max-w-xl">
+      {/* Left-anchored copy (spec §1 composition). The container itself must NOT
+          capture the pointer — its bounding box overlaps bottles drifting behind
+          the text, and a solid hit-area there blocks the canvas raycast so those
+          bottles can't be grabbed. Only the actual buttons re-enable pointer events. */}
+      <div className="pointer-events-none absolute left-8 md:left-16 top-1/2 -translate-y-1/2 max-w-xl">
         <CopyReveal />
         <CtaButtons />
       </div>
