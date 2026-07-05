@@ -87,7 +87,7 @@ export function MediaCarousel() {
   const slide = SLIDES[index];
 
   return (
-    <Section id="media">
+    <Section id="media" align="left">
       <p className="text-xs uppercase tracking-[0.3em] text-rw-red/80">In the community</p>
       <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-rw-bone md:text-4xl">Media</h2>
 

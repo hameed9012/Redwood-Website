@@ -92,15 +92,16 @@ export function Fish({ count = 8, seed = 4242 }: { count?: number; seed?: number
     <group ref={groupRef}>
       {fish.map((f) => (
         <group key={f.key} scale={f.scale}>
-          {/* body: flattened ellipsoid */}
+          {/* body: flattened ellipsoid — mid teal-grey so it reads against the
+              deep water (a near-black silhouette vanished into the fog). */}
           <mesh scale={[1, 0.5, 0.32]}>
             <sphereGeometry args={[0.5, 12, 10]} />
-            <meshStandardMaterial color="#0b1a1b" roughness={0.9} metalness={0} />
+            <meshStandardMaterial color="#3a6169" roughness={0.85} metalness={0} />
           </mesh>
           {/* tail fin: swept back along -X, flattened vertically */}
           <mesh position={[-0.55, 0, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 1, 0.4]}>
             <coneGeometry args={[0.22, 0.4, 8]} />
-            <meshStandardMaterial color="#0a1617" roughness={0.9} metalness={0} />
+            <meshStandardMaterial color="#31555c" roughness={0.85} metalness={0} />
           </mesh>
         </group>
       ))}

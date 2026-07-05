@@ -15,17 +15,25 @@ interface TrayProps {
  */
 export function Tray({ slots, highlightIndex = -1, onSlotRects }: TrayProps) {
   const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!onSlotRects) return;
     let raf = 0;
     const report = () => {
-      const rects = slotRefs.current.map((el) => el?.getBoundingClientRect()).filter(Boolean) as DOMRect[];
-      if (rects.length === 4) onSlotRects(rects);
+      if (onSlotRects) {
+        const rects = slotRefs.current.map((el) => el?.getBoundingClientRect()).filter(Boolean) as DOMRect[];
+        if (rects.length === 4) onSlotRects(rects);
+      }
+      // Fade the tray out as the hero scrolls away — the puzzle is a surface
+      // activity, so the boxes shouldn't linger, half-scrolled, into the dive.
+      if (containerRef.current) {
+        const vh = window.innerHeight || 1;
+        const fade = Math.max(0, Math.min(1, 1 - window.scrollY / (vh * 0.35)));
+        containerRef.current.style.opacity = String(fade);
+      }
     };
-    // Rects are viewport-relative, so they shift as the page scrolls (the tray
-    // lives in the hero section). Re-report on scroll (rAF-throttled) + resize so
-    // dropped bottles keep landing on the visible slot boxes.
+    // Rects are viewport-relative and shift as the page scrolls (the tray lives
+    // in the hero section). Re-report on scroll (rAF-throttled) + resize.
     const onScrollOrResize = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(report);
@@ -42,6 +50,7 @@ export function Tray({ slots, highlightIndex = -1, onSlotRects }: TrayProps) {
 
   return (
     <div
+      ref={containerRef}
       aria-hidden
       className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-3"
     >
