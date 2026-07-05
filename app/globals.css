@@ -4,7 +4,14 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body {
+html {
+  /* Root/viewport fallback only. The BODY must stay transparent: the fixed
+     WebGL dive canvas sits at z-index -10, and an opaque body background would
+     paint over it (negative-z children paint before block backgrounds), hiding
+     the entire water scene. */
   background: var(--rw-black);
+}
+
+html, body {
   margin: 0;
 }

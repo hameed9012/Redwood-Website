@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AmbientScheduler } from '@/lib/audio/AmbientScheduler';
+import { AmbientScheduler, registerActiveScheduler } from '@/lib/audio/AmbientScheduler';
 
 const CLIPS = ['/audio/drip.ogg', '/audio/creak.ogg', '/audio/bubble.ogg', '/audio/water.ogg'];
 
@@ -19,7 +19,13 @@ export function AudioToggle() {
     [],
   );
 
-  useEffect(() => () => scheduler.disable(), [scheduler]);
+  useEffect(() => {
+    registerActiveScheduler(scheduler);
+    return () => {
+      registerActiveScheduler(null);
+      scheduler.disable();
+    };
+  }, [scheduler]);
 
   const toggle = () => {
     setOn((prev) => {

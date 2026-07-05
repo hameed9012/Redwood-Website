@@ -1,47 +1,59 @@
 # Redwood Peak — Changelog
 
-## v0.1.1 — Surfacing
+## v0.4.0 — okay here's the whole thing so far
 
-We have adjusted the vantage point. You are now looking *down* at the water, as one does from a dock, or a bridge, or the deck of a vessel you would prefer not to name. Management considers this the correct angle. Please do not lean over the railing.
+alright so i never wrote these up properly and the old changelogs were WAY too dramatic lmao, so i nuked all of them and this is one clean "from nothing to now" dump. if you're seeing the site for the first time, this is the entire tour in one place.
 
-### The water
-- **You're above it now.** The whole scene was turned over the top: a bird's-eye view straight down onto open water, the surface moving on its own — real waves, not a still pond. The bottles and syringes float scattered across it, smaller and farther apart, the way debris actually spreads.
-- **The water answers your hand.** Move your cursor across the surface and it parts — a real ripple cuts out from the point and rolls outward, and anything floating nearby drifts away from the disturbance before settling back. Try not to read anything into that.
-- **Some of them came open.** A few bottles drift uncapped, their contents loose in the water beside them. We are looking into it.
-- **Everything drifts.** Every floating thing now turns and bobs on its own current, including the four that matter. Nothing is bolted down.
+quick version: it's a (fake) pharma company site with a big underwater 3D hero, a hidden puzzle that unlocks a login, a scroll-dive down into the deep, the public pages (history / services / media / contact), and a secret-name login that drops you into a tiered employee portal. that's it. details below :D
 
-### The front desk
-- **It introduces itself properly now.** "We are The Redwood Co." — a statement, not a greeting to a stranger.
-- **The line types itself.** The list of who we are no longer fades between entries; it is typed out and rubbed out, letter by letter, like a terminal with something on its mind.
-- **Lean toward a bottle.** Hover one and it tips up to show you its label, then settles back when you look away.
+### the hero — the water thing
+the landing page is a real WebGL water tank, not a video.
+- top-down view of open water with actual moving waves (hand-written shader, not a gif).
+- bottles + syringes float around and drift on their own, each one bobbing and turning independently.
+- move your cursor over the water and it ripples out from your pointer, and nearby stuff drifts away from the disturbance before settling.
+- hover a bottle and it tips up so you can read the label — there's also a little name chip so you can actually tell what's what.
+- the "we are ___" line types itself out and cycles (pharmaceutical company, logistics, camping gear, etc — all "true" ofc).
+- there's a tanker parked on the far shore quietly dumping something into the water. don't worry about it.
+- audio toggle in the corner (off by default) — drips, creaks, bubbles, never loops the same twice.
+- it scales itself down on weaker hardware so it doesn't fall over on a budget phone.
 
-### Across the far bank
-- **Don't mind the truck.** If you follow the water to the distant shore, there is a tanker parked on the slope, emptying something into the current. It is a community matter. It is being handled.
+### the puzzle — the hidden bit
+there are 4 specific bottles: P, E, A, K.
+- pick them up and drag them into the little row of 4 slots at the bottom.
+- get the order right (read the labels 👀) and things happen.
+- wrong order? they just quietly float back out. no popup, no "try again", no counter. nothing.
+- get 3 of 4 right and something flickers in the deep for a sec.
+- solve it and: everything freezes → the tank DRAINS out from under you and the camera falls with it → a loading screen with real chem/physics facts (a couple are… not real) → and it drops you at a login door.
+- solve it once and your session remembers, so a refresh won't drag you through the whole drain again.
 
-### Housekeeping
-- **It's lighter on its feet.** We profiled the scene properly and trimmed what was costly to draw — keeping the real glass where you'd actually notice it. It should run smoother now, especially on modest hardware.
+### the dive — scrolling = going underwater
+scrolling down doesn't scroll a page, it sinks you.
+- the whole 3D canvas is a fixed background now, and the camera flies from the top-down surface, tips level with the water, then drops under.
+- it's a 3-stage move: surface (top-down) → a level shot looking across the water at the tanker on the shore → down into the deep.
+- down there: fish drifting around, a scatter of extra bottles, and a few coffins way down on the bed. yeah.
+- the descent eases now instead of being locked 1:1 to your scrollbar, so it feels like an actual camera move instead of a scrubber.
 
-### A note for the first people back in
-The view changed and a few things moved with it. If something reads wrong from up here, tell us *what you were looking at and what it did*. Keep watching the far bank.
+### the actual pages
+these sit over the water as you sink past them:
+- **History** — types itself out the first time you reach it. the company backstory (founded oct 2024, the "shell companies", all that).
+- **Services** — 3 cards that pop in: Pharmaceutical Supply, Logistics, Camping Equipment. "wholesale and contract inquiries only."
+- **Media** — a little auto-playing carousel (pauses when you hover it) of "community" stuff. two of the slides have black redaction bars over a line — you can read them if you squint.
+- **Contact** — drop a discord name + optional message, get a fake inquiry number back. it actually saves to a database (supabase) if the keys are set, otherwise it just shows you the number and moves on.
 
----
+### the login + portal — the members area
+the drain drops you at Employee Access.
+- type a secret name. if it's a real one you're in; if not, "that name is not on any list we keep." no hints, no lockout theatre.
+- the names aren't stored anywhere in plaintext — only hashes. right now they're placeholder codenames, i'll swap the real ones in.
+- three tiers: Recruit < Employee < High Command, each sees more than the last.
+- you land in a portal that greets you by tier and shows a grid of sections (Orientation, Personnel, Ops Log, Witness Dossiers, etc). the ones above your clearance show up locked, so you can see there's more to reach.
+- it remembers you until you sign out.
+- (the portal sections themselves are placeholders for now — those get filled in later phases.)
 
-## v0.1.0 — Welcome to Redwood Peak
+### NEW: applications are OPEN
+we finished the application form, so the old "applications opening soon" button is now a live **Apply Now** that goes straight to the form. the Join Us button still opens the discord.
 
-Per board directive, the public-facing storefront is now operational. We are, as always, creators for the better good of America. Please direct wholesale and contract inquiries through the appropriate channels.
+### under the hood / the pile of fixes
+a bunch of stuff got fixed getting here: the water canvas hiding behind the page background, the hero headline vanishing on tiny scrolls, scroll jank, the puzzle breaking once the canvas became a full-page background, parked bottles landing off their slots, a busted media post, the deep being pitch black so you couldn't see the fish, and generally getting the whole thing to a steady 60fps.
 
-### The Tank
-- **The vault is wet.** The landing page is now a real medical tank — actual glass, actual refraction, actual cold light moving through actual depth. Bottles and syringes are suspended in it. We do not recommend asking what is in them.
-- **They rise on their own.** On arrival the tank holds empty for a breath, then the contents surface from the dark below — staggered, unhurried, some turning as they come up, some pausing partway as if reconsidering. No two arrivals are timed alike.
-- **Reach toward the glass.** Hover a bottle and it turns to face you, label and all. Let go and it drifts back to where it was. The water answers the cursor.
-
-### The Front Desk
-- **Who we are, on rotation.** "We are a—" and then, in order: a pharmaceutical company, a technological company, creators for the better good of America, outdoor camping equipment sellers, a logistics company. All true. All at once.
-- **Two doors.** "Join Us" opens our Discord. "Applications opening soon" will open when the paperwork clears.
-- **Sound, if you want it.** A quiet toggle in the corner. Off unless you ask. Drips, creaks, the occasional bubble. Nothing repeats the same way twice.
-
-### Housekeeping
-- **It runs on a budget phone too.** The tank scales itself down on lower-end devices instead of falling over.
-
-### A note for the first people in
-This is the first thing we have let outsiders see. If something looks wrong, tell us *what you touched and what it did* — that is the most useful thing you can send us. Look closely. Some things are easier to find than others.
+### if you're poking around
+break everything. if something looks wrong, telling me exactly what you clicked and what it did is genuinely the most useful thing you can send me. and go find the stuff that isn't obvious 👀

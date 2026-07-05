@@ -2,6 +2,7 @@
 
 import { useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
+import { useFreeze } from './puzzle/useFreeze';
 
 export interface BreathOffset {
   x: number;
@@ -30,7 +31,9 @@ export function breathingOffset(t: number): BreathOffset {
 export function useCameraBreathing(target: [number, number, number] = [0, 0, 0]) {
   const { camera } = useThree();
   const base = useRef({ x: camera.position.x, y: camera.position.y, z: camera.position.z });
+  const frozen = useFreeze();
   useFrame(({ clock }) => {
+    if (frozen.current) return;
     const o = breathingOffset(clock.elapsedTime);
     camera.position.x = base.current.x + o.x;
     camera.position.z = base.current.z + o.y * 0.5;

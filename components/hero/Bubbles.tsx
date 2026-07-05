@@ -3,6 +3,7 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Points, BufferGeometry, Float32BufferAttribute, PointsMaterial } from 'three';
+import { useFreeze } from './puzzle/useFreeze';
 
 interface BubblesProps {
   count: number;
@@ -10,6 +11,7 @@ interface BubblesProps {
 
 export function Bubbles({ count }: BubblesProps) {
   const ref = useRef<Points>(null);
+  const frozen = useFreeze();
 
   const { geometry, material, speeds } = useMemo(() => {
     const positions = new Float32Array(count * 3);
@@ -33,6 +35,7 @@ export function Bubbles({ count }: BubblesProps) {
   }, [count]);
 
   useFrame((_, delta) => {
+    if (frozen.current) return;
     const pos = geometry.getAttribute('position') as Float32BufferAttribute;
     for (let i = 0; i < count; i++) {
       let y = pos.getY(i) + speeds[i] * delta;

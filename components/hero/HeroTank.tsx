@@ -1,16 +1,19 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Environment } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { TankScene } from './TankScene';
-import { PeakRegistry } from './peak';
 import { detectTierFromBrowser, qualityFor, type QualityProfile } from './quality';
+import { useFreeze, FreezeBridge } from './puzzle/useFreeze';
+import { usePuzzle, PuzzleBridge } from './puzzle/PuzzleProvider';
 
-export function HeroTank() {
-  const registry = useMemo(() => new PeakRegistry(), []);
+export function HeroTank({ onDrained }: { onDrained?: () => void } = {}) {
+  const puzzle = usePuzzle();
+  const registry = puzzle.registry;
   const [quality, setQuality] = useState<QualityProfile>(() => qualityFor('mid'));
+  const frozen = useFreeze();
 
   useEffect(() => {
     setQuality(qualityFor(detectTierFromBrowser()));
@@ -32,18 +35,22 @@ export function HeroTank() {
       camera={{ position: [0, 16, 0.001], fov: 50, near: 0.1, far: 60 }}
       gl={{ antialias: true, alpha: false }}
     >
-      <Environment files={quality.hdriPath} environmentIntensity={1.8} />
-      <TankScene registry={registry} quality={quality} />
-      {/* Lean postprocessing — DepthOfField + ChromaticAberration dropped: profiling
-          (R2-11) showed the scene is fill-rate bound at 1920px and DoF was the
-          dominant full-screen pass (~16→50 FPS when viewport shrank). Bloom +
-          vignette are the cheap, high-value passes. */}
-      {quality.postprocessing && (
-        <EffectComposer>
-          <Bloom intensity={0.6} luminanceThreshold={0.6} mipmapBlur />
-          <Vignette eskil={false} offset={0.3} darkness={0.7} />
-        </EffectComposer>
-      )}
+      <FreezeBridge freezeRef={frozen}>
+        <PuzzleBridge value={puzzle}>
+          <Environment files={quality.hdriPath} environmentIntensity={1.8} />
+          <TankScene registry={registry} quality={quality} onDrained={onDrained} />
+          {/* Lean postprocessing — DepthOfField + ChromaticAberration dropped: profiling
+              (R2-11) showed the scene is fill-rate bound at 1920px and DoF was the
+              dominant full-screen pass (~16→50 FPS when viewport shrank). Bloom +
+              vignette are the cheap, high-value passes. */}
+          {quality.postprocessing && (
+            <EffectComposer>
+              <Bloom intensity={0.6} luminanceThreshold={0.6} mipmapBlur />
+              <Vignette eskil={false} offset={0.3} darkness={0.7} />
+            </EffectComposer>
+          )}
+        </PuzzleBridge>
+      </FreezeBridge>
     </Canvas>
   );
 }

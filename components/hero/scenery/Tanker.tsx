@@ -5,6 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import { BufferGeometry, Float32BufferAttribute, PointsMaterial, Points, type Group } from 'three';
 import { useGLTF } from '@react-three/drei';
 import { useAssetPresence, shouldRenderGlb } from '../objects/useOptionalGLTF';
+import { useFreeze } from '../puzzle/useFreeze';
 
 const GLB_PATH = '/models/tanker.glb';
 
@@ -35,6 +36,7 @@ function TruckBlock() {
 }
 
 function PourStream() {
+  const frozen = useFreeze();
   const points = useMemo(() => {
     const n = 40;
     const pos = new Float32Array(n * 3);
@@ -44,6 +46,7 @@ function PourStream() {
     return new Points(g, m);
   }, []);
   useFrame((_, dt) => {
+    if (frozen.current) return;
     const p = points.geometry.getAttribute('position') as Float32BufferAttribute;
     for (let i = 0; i < p.count; i++) { let y = p.getY(i) - dt * 2.5; if (y < -3) y = 0; p.setY(i, y); }
     p.needsUpdate = true;
