@@ -17,6 +17,7 @@ function useStamp() {
 
 export function CtaButtons() {
   const join = useStamp();
+  const apply = useStamp();
   return (
     <div className="pointer-events-auto flex gap-3 mt-6">
       <a
@@ -28,14 +29,26 @@ export function CtaButtons() {
       >
         Join Us
       </a>
-      <button
-        type="button"
-        disabled={APPLY_FORM_URL === null}
-        className="px-5 py-2.5 rounded border border-rw-bone/30 text-rw-bone/60 font-semibold cursor-not-allowed"
-        title="Applications opening soon"
-      >
-        Applications opening soon
-      </button>
+      {APPLY_FORM_URL ? (
+        <a
+          href={APPLY_FORM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          {...apply.handlers}
+          className={`px-5 py-2.5 rounded border border-rw-bone/40 text-rw-bone font-semibold transition-transform duration-150 hover:border-rw-bone/70 ${apply.className}`}
+        >
+          Apply Now
+        </a>
+      ) : (
+        <button
+          type="button"
+          disabled
+          className="px-5 py-2.5 rounded border border-rw-bone/30 text-rw-bone/60 font-semibold cursor-not-allowed"
+          title="Applications opening soon"
+        >
+          Applications opening soon
+        </button>
+      )}
     </div>
   );
 }
