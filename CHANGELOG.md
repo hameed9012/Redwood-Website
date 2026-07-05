@@ -1,5 +1,27 @@
 # Redwood Peak — Changelog
 
+## v0.4.0 — The Door Opens
+
+The door at the bottom of the drain was never locked, exactly. It was waiting to be told a name. Now it listens.
+
+### Say the name
+- **The Secret name field is live.** Type the name you were given — the real one, the one issued out-of-band — and if we recognize it, you're let inside. Type anything else and you are told, politely, that it is not on any list we keep. We do not say which part was wrong. We do not keep a count.
+- **We don't write your name down.** Not the way you'd think. We keep only a fingerprint of it — enough to know a real name when we hear it, not enough to hand back. This is deliberate.
+- **You are remembered.** Once you're in, you stay in, across reloads, until you sign out. The door does not make you knock twice.
+
+### Where you stand
+- **Three levels of knowing.** Recruit, Employee, and High Command. Each sees everything the ones beneath it see, and a little more. Your level is shown to you, plainly, in the corner.
+- **You can see the shape of what you can't reach.** The doors you're not cleared for are still on the wall — dimmed, locked, labeled with the clearance they'd need. We find it is better that you know they exist.
+- **A way back out.** Sign out and the door forgets you, and you are returned to it.
+
+### Behind the door
+- **Nothing, yet.** Orientation, Notices, Personnel, the Operations Log, Assignments, the Witness Dossiers — all present, all patient. They open in their own time.
+
+### For whoever keeps the list
+the recognized names are placeholders for now (`minnow`, `tidewater`, `leviathan`). Replacing them with the real ones is a matter of swapping three fingerprints — the README explains how. No name is ever written into the site itself.
+
+---
+
 ## v0.3.0 — The Descent
 
 The surface, it turns out, was only the top of it. Scroll down and you do not scroll — you sink. Management has made the lower floors available for viewing. We ask only that you keep your hands inside the frame.

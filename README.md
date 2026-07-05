@@ -39,6 +39,31 @@ submissions for real:
    **no code changes required**. The Supabase client is loaded on demand at
    submit time, so it stays out of the initial page bundle.
 
+## Employee Access — setting the real secret names
+
+`/login` accepts a **secret name** and, if recognized, signs the visitor in at a
+tier (Recruit / Employee / High Command) and sends them to `/portal`. The
+recognized names are never stored in plaintext — only their SHA-256 hashes live
+in [`lib/auth/secretNames.ts`](lib/auth/secretNames.ts).
+
+Placeholder codenames ship so the flow is testable:
+`minnow` → Recruit, `tidewater` → Employee, `leviathan` → High Command.
+
+To set your real names, compute the SHA-256 of each (lowercased, trimmed) and
+replace the three hashes in `SECRET_HASHES`:
+
+```bash
+# prints the hash to paste as the key for the desired tier
+node -e "console.log(require('crypto').createHash('sha256').update('YOUR-NAME'.toLowerCase().trim()).digest('hex'))"
+```
+
+You can add more than one name per tier (just add more `hash: 'tier'` entries).
+No plaintext name is ever written into the site.
+
+> Note: this is a shared-codename gate for the roleplay, not real authentication —
+> the check runs client-side and the session lives in `localStorage`. It is not
+> protecting anything sensitive.
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More
