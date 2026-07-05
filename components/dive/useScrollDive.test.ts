@@ -2,33 +2,36 @@ import { describe, it, expect } from 'vitest';
 import { diveProgressFromScroll } from './useScrollDive';
 
 describe('diveProgressFromScroll', () => {
-  const maxScroll = 3000; // documentHeight - viewportH
+  // Surface holds until startPx, then ramps to 1 by endPx.
+  const startPx = 1000;
+  const endPx = 3000;
 
-  it('is 0 at the top (surface)', () => {
-    expect(diveProgressFromScroll(0, maxScroll)).toBe(0);
+  it('is 0 through the surface zone (before startPx)', () => {
+    expect(diveProgressFromScroll(0, startPx, endPx)).toBe(0);
+    expect(diveProgressFromScroll(500, startPx, endPx)).toBe(0);
+    expect(diveProgressFromScroll(startPx, startPx, endPx)).toBe(0);
   });
 
-  it('reaches 1 exactly at the page bottom (deep) and clamps beyond', () => {
-    expect(diveProgressFromScroll(maxScroll, maxScroll)).toBe(1);
-    expect(diveProgressFromScroll(maxScroll * 3, maxScroll)).toBe(1);
+  it('reaches 1 at endPx (deep) and clamps beyond', () => {
+    expect(diveProgressFromScroll(endPx, startPx, endPx)).toBe(1);
+    expect(diveProgressFromScroll(endPx + 5000, startPx, endPx)).toBe(1);
   });
 
-  it('is proportional through the descent', () => {
-    expect(diveProgressFromScroll(maxScroll * 0.5, maxScroll)).toBeCloseTo(0.5, 6);
-    expect(diveProgressFromScroll(maxScroll * 0.25, maxScroll)).toBeCloseTo(0.25, 6);
+  it('is ~0.5 halfway between the anchors', () => {
+    expect(diveProgressFromScroll(2000, startPx, endPx)).toBeCloseTo(0.5, 6);
   });
 
-  it('increases monotonically from top to bottom', () => {
+  it('increases monotonically across the descent', () => {
     let prev = -1;
-    for (let s = 0; s <= maxScroll; s += 50) {
-      const p = diveProgressFromScroll(s, maxScroll);
+    for (let s = startPx; s <= endPx; s += 50) {
+      const p = diveProgressFromScroll(s, startPx, endPx);
       expect(p).toBeGreaterThanOrEqual(prev);
       prev = p;
     }
   });
 
-  it('guards a zero / negative scrollable height (page shorter than viewport)', () => {
-    expect(diveProgressFromScroll(500, 0)).toBe(0);
-    expect(diveProgressFromScroll(500, -100)).toBe(0);
+  it('guards a degenerate span (endPx <= startPx)', () => {
+    expect(diveProgressFromScroll(500, 1000, 1000)).toBe(0);
+    expect(diveProgressFromScroll(1200, 1000, 1000)).toBe(1);
   });
 });

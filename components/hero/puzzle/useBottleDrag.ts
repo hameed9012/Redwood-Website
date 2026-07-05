@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect, useRef, type MutableRefObject } from 'react';
+import { useEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Raycaster, Vector2, Plane, Vector3, type Object3D } from 'three';
 import { usePuzzleMaybe } from './PuzzleProvider';
 import { screenSlotIndex } from './trayGeometry';
 import type { PeakLetter } from '../peak';
 
-/** Past this dive progress, the tray has scrolled away — grabbing is disabled. */
-const DRAG_MAX_DIVE = 0.02;
+/** The puzzle is playable while the hero fills at least this fraction of the
+ *  viewport (i.e. you're near the top). Gating on scroll — not dive progress —
+ *  means scrolling down a little and back up reliably re-enables it. */
+const HERO_VISIBLE_FRACTION = 0.5;
 
 const GROUND_PLANE = new Plane(new Vector3(0, 1, 0), 0);
 const GRAB_HEIGHT = 1.1;
@@ -34,16 +36,25 @@ function resolveLetter(hit: Object3D, entries: { letter: PeakLetter; object: Obj
  * PuzzleProvider (usePuzzleMaybe() === null) — safe to call unconditionally
  * from TankScene.
  */
-export function useBottleDrag(diveProgress?: MutableRefObject<number>): void {
+export function useBottleDrag(): void {
   const puzzle = usePuzzleMaybe();
   const { gl, camera } = useThree();
 
   const lastHighlightRef = useRef(-1);
+  const hoverRef = useRef<PeakLetter | null>(null);
   const raycasterRef = useRef(new Raycaster());
 
   useEffect(() => {
     if (!puzzle) return;
+    // The scene canvas is a FIXED, -z-10 page background, so DOM content (the
+    // hero section, sections) sits on top of it and swallows pointer events —
+    // R3F's own canvas events never fire. We therefore listen on `window` (which
+    // receives every pointer event regardless of stacking) and raycast ourselves,
+    // using the canvas rect (== viewport, since it's fixed inset-0) for NDC.
     const el = gl.domElement;
+
+    const puzzleActive = () =>
+      puzzle.phase === 'idle' && window.scrollY <= window.innerHeight * HERO_VISIBLE_FRACTION;
 
     const ndcFromEvent = (e: PointerEvent): Vector2 => {
       const rect = el.getBoundingClientRect();
@@ -98,33 +109,44 @@ export function useBottleDrag(diveProgress?: MutableRefObject<number>): void {
       };
     };
 
-    const onPointerDown = (e: PointerEvent) => {
-      if (puzzle.phase !== 'idle') return;
-      if (puzzle.drag.current.grabbed) return;
-      // Once the dive has begun the tray has scrolled off — solving is a
-      // surface activity, so don't let a click into the deep grab a bottle.
-      if (diveProgress && diveProgress.current > DRAG_MAX_DIVE) return;
-
+    /** Which registered bottle (if any) is under the pointer. */
+    const raycastLetter = (e: PointerEvent): PeakLetter | null => {
       const ndc = ndcFromEvent(e);
       raycasterRef.current.setFromCamera(ndc, camera);
       const entries = puzzle.registry.all();
       const objects = entries.map((entry) => entry.object);
       const intersections = raycasterRef.current.intersectObjects(objects, true);
-      if (intersections.length === 0) return;
+      if (intersections.length === 0) return null;
+      return resolveLetter(intersections[0].object, entries);
+    };
 
-      const letter = resolveLetter(intersections[0].object, entries);
+    const onPointerDown = (e: PointerEvent) => {
+      if (puzzle.drag.current.grabbed) return;
+      if (!puzzleActive()) return;
+
+      const letter = raycastLetter(e);
       if (!letter) return;
       if (puzzle.slots.includes(letter)) return; // already slotted
 
+      e.preventDefault(); // suppress text selection / native drag while carrying
       puzzle.drag.current.grabbed = letter;
       puzzle.suspendedRef.current[letter] = 'grabbed';
       puzzle.setHoveredLetter(letter); // keep the name chip up while carrying
-      el.setPointerCapture(e.pointerId);
     };
 
     const onPointerMove = (e: PointerEvent) => {
       const grabbed = puzzle.drag.current.grabbed;
-      if (!grabbed) return;
+
+      if (!grabbed) {
+        // Hover → drives the readable DOM name chip (R3F's own hover is dead,
+        // see above). Only near the top; clear when off a bottle or scrolled away.
+        const letter = puzzleActive() ? raycastLetter(e) : null;
+        if (letter !== hoverRef.current) {
+          hoverRef.current = letter;
+          puzzle.setHoveredLetter(letter);
+        }
+        return;
+      }
 
       const hit = worldXZFromEvent(e);
       if (hit) {
@@ -162,18 +184,19 @@ export function useBottleDrag(diveProgress?: MutableRefObject<number>): void {
 
       puzzle.drag.current.grabbed = null;
       lastHighlightRef.current = -1;
+      hoverRef.current = null;
       puzzle.setHighlightIndex(-1);
       puzzle.setHoveredLetter(null);
-      if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
     };
 
-    el.addEventListener('pointerdown', onPointerDown);
-    el.addEventListener('pointermove', onPointerMove);
-    el.addEventListener('pointerup', onPointerUp);
+    // Bound to window (not the canvas) so events reach us over the DOM content.
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
     return () => {
-      el.removeEventListener('pointerdown', onPointerDown);
-      el.removeEventListener('pointermove', onPointerMove);
-      el.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
     };
     // puzzle is a stable object identity from context (bridged), gl/camera stable from useThree.
     // eslint-disable-next-line react-hooks/exhaustive-deps

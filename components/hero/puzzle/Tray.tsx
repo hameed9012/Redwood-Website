@@ -17,14 +17,27 @@ export function Tray({ slots, highlightIndex = -1, onSlotRects }: TrayProps) {
   const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
+    if (!onSlotRects) return;
+    let raf = 0;
     const report = () => {
-      if (!onSlotRects) return;
       const rects = slotRefs.current.map((el) => el?.getBoundingClientRect()).filter(Boolean) as DOMRect[];
       if (rects.length === 4) onSlotRects(rects);
     };
+    // Rects are viewport-relative, so they shift as the page scrolls (the tray
+    // lives in the hero section). Re-report on scroll (rAF-throttled) + resize so
+    // dropped bottles keep landing on the visible slot boxes.
+    const onScrollOrResize = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(report);
+    };
     report();
-    window.addEventListener('resize', report);
-    return () => window.removeEventListener('resize', report);
+    window.addEventListener('resize', onScrollOrResize);
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', onScrollOrResize);
+      window.removeEventListener('scroll', onScrollOrResize);
+    };
   }, [onSlotRects]);
 
   return (

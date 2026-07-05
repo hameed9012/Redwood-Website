@@ -7,15 +7,16 @@ import { breathingOffset } from '../hero/useCameraBreathing';
 import { useFreeze } from '../hero/puzzle/useFreeze';
 
 /**
- * Pure scroll→dive-progress mapping (tested): the descent spans the ENTIRE
- * document scroll — 0 at the very top (surface), 1 at the very bottom (deep) —
- * so each public section, wherever it sits in the flow, gets a natural depth and
- * "reveals as the camera sinks past it" (spec §2). Robust to content height: add
- * or resize a section and the mapping still spans exactly the whole page.
+ * Pure scroll→dive-progress mapping (tested). The descent is 0 up to `startPx`
+ * (the SURFACE zone — hero + History stay at the top-down surface, tanker in
+ * view), then ramps to 1 by `endPx` (the deep). Anchoring to real section
+ * offsets keeps History at the surface and lets Services/Media/Contact sink,
+ * instead of the whole page mapping linearly (which dropped History underwater).
  */
-export function diveProgressFromScroll(scrollY: number, maxScroll: number): number {
-  if (maxScroll <= 0) return 0;
-  return Math.min(1, Math.max(0, scrollY / maxScroll));
+export function diveProgressFromScroll(scrollY: number, startPx: number, endPx: number): number {
+  const span = endPx - startPx;
+  if (span <= 0) return scrollY >= endPx ? 1 : 0;
+  return Math.min(1, Math.max(0, (scrollY - startPx) / span));
 }
 
 /** Descendants inside the canvas read live dive progress (0..1) from this ref. */
@@ -36,16 +37,25 @@ export const DiveProgressProvider = DiveContext.Provider;
  */
 export function useScrollDive(): MutableRefObject<number> {
   const progress = useRef(0);
-  // Cache the scrollable height. Reading scrollHeight forces a synchronous
-  // layout — doing it every frame thrashes the page (jank). Recompute only on
-  // resize plus a couple of post-layout settles.
-  const maxScroll = useRef(1);
+  // Cache the descent's scroll anchors. Reading offsetTop/scrollHeight forces a
+  // synchronous layout — doing it every frame thrashes the page (jank). Recompute
+  // only on resize plus a couple of post-layout settles. Defaults keep progress
+  // at 0 (surface) until the first measurement.
+  const startPx = useRef(Number.POSITIVE_INFINITY);
+  const endPx = useRef(Number.POSITIVE_INFINITY);
   const { camera } = useThree();
   const frozen = useFreeze();
 
   useEffect(() => {
     const recompute = () => {
-      maxScroll.current = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      const vh = window.innerHeight;
+      const maxScroll = Math.max(1, document.documentElement.scrollHeight - vh);
+      const services = document.getElementById('services');
+      const contact = document.getElementById('contact');
+      // Surface holds through the hero and History; the dive begins as Services
+      // is halfway into view and completes when Contact (the deepest) is reached.
+      startPx.current = services ? Math.max(0, services.offsetTop - vh * 0.5) : maxScroll;
+      endPx.current = contact ? contact.offsetTop : maxScroll;
     };
     recompute();
     const t1 = setTimeout(recompute, 300);
@@ -61,7 +71,7 @@ export function useScrollDive(): MutableRefObject<number> {
   useFrame(({ clock }) => {
     if (frozen.current) return;
     const sy = typeof window !== 'undefined' ? window.scrollY : 0; // cheap: no layout
-    const p = diveProgressFromScroll(sy, maxScroll.current);
+    const p = diveProgressFromScroll(sy, startPx.current, endPx.current);
     progress.current = p;
 
     const pose = divePose(p);

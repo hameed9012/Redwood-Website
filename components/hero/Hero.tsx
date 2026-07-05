@@ -46,12 +46,9 @@ export function Hero() {
           <HeroOverlay />
         </section>
 
-        {/* Dive-intro: a stretch of pure descent into the deepening water before the
-            first section surfaces. Dive progress maps to the WHOLE document scroll,
-            so this spacer plus the sections below set the descent's length/pacing. */}
-        <div aria-hidden data-dive-region className="h-[120svh]" />
-
-        {/* Public sections — revealed as the camera sinks past them (spec §4). */}
+        {/* Public sections. Hero + History are the SURFACE zone (camera stays at
+            the top-down surface, tanker in view); the dive begins at Services and
+            deepens through Contact (see useScrollDive anchors). */}
         <HistorySection />
         <ServicesSection />
         <MediaCarousel />

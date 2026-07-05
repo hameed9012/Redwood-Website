@@ -33,9 +33,9 @@ export function TankScene({ registry, quality, onDrained }: TankSceneProps) {
   const surfaceDecor = useRef<Group>(null);
   const frozen = useFreeze();
   // The dive owns the camera now (surface pose at scroll-top → submerged at depth),
-  // folding in the old top-down breathing drift. Drag is gated to the surface.
+  // folding in the old top-down breathing drift. Drag gates itself to the hero.
   const diveProgress = useScrollDive();
-  useBottleDrag(diveProgress);
+  useBottleDrag();
 
   // Slow cold light sweep on a 20–30s cycle (spec §6.5).
   // Orbits above the XZ surface and aims straight down at the center for the top-down camera.
