@@ -6,7 +6,12 @@ import { useTypewriter } from './useTypewriter';
 
 export function CopyReveal() {
   const mode = useRevealSequence();
-  const showIntro = mode === 'full';
+  // Show the headline whenever the hero is in view (top of page) — both on the
+  // first 'full' reveal and every time the user scrolls back to the top
+  // ('phrases-only'). Only hide it while scrolled away ('idle'), where the whole
+  // overlay is off-screen anyway. Previously it only showed in 'full', so
+  // returning to the top after a scroll left the headline gone.
+  const showIntro = mode !== 'idle';
   const typed = useTypewriter(HERO_PHRASES, true);
 
   return (

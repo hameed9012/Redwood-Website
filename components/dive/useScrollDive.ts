@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useRef, type MutableRefObject } from 'react';
+import { createContext, useContext, useEffect, useRef, type MutableRefObject } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { divePose } from './divePath';
 import { breathingOffset } from '../hero/useCameraBreathing';
@@ -36,15 +36,32 @@ export const DiveProgressProvider = DiveContext.Provider;
  */
 export function useScrollDive(): MutableRefObject<number> {
   const progress = useRef(0);
+  // Cache the scrollable height. Reading scrollHeight forces a synchronous
+  // layout — doing it every frame thrashes the page (jank). Recompute only on
+  // resize plus a couple of post-layout settles.
+  const maxScroll = useRef(1);
   const { camera } = useThree();
   const frozen = useFreeze();
 
+  useEffect(() => {
+    const recompute = () => {
+      maxScroll.current = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    };
+    recompute();
+    const t1 = setTimeout(recompute, 300);
+    const t2 = setTimeout(recompute, 1200);
+    window.addEventListener('resize', recompute);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      window.removeEventListener('resize', recompute);
+    };
+  }, []);
+
   useFrame(({ clock }) => {
     if (frozen.current) return;
-    const doc = typeof document !== 'undefined' ? document.documentElement : null;
-    const maxScroll = doc ? doc.scrollHeight - window.innerHeight : 0;
-    const sy = typeof window !== 'undefined' ? window.scrollY : 0;
-    const p = diveProgressFromScroll(sy, maxScroll);
+    const sy = typeof window !== 'undefined' ? window.scrollY : 0; // cheap: no layout
+    const p = diveProgressFromScroll(sy, maxScroll.current);
     progress.current = p;
 
     const pose = divePose(p);
