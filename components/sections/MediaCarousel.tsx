@@ -3,13 +3,18 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Section } from './Section';
 
-/** A thin black redaction bar over part of a sentence — legible if you look
- *  closely (the text sits faintly beneath a near-opaque bar). Spec §4.3. */
+/** A redaction over part of a sentence — a solid black bar with the text left
+ *  faintly legible beneath it (spec §4.3). Inline styles (not Tailwind var/opacity
+ *  utilities, which don't take on the CSS-var colours) so the bar and the faint
+ *  text render reliably. Flows inline and wraps across lines via
+ *  box-decoration-clone, so it never forces its own line. */
 function Redacted({ children }: { children: ReactNode }) {
   return (
-    <span className="relative mx-0.5 inline-block align-baseline">
-      <span className="text-rw-bone/70">{children}</span>
-      <span aria-hidden className="pointer-events-none absolute inset-x-0 inset-y-[0.05em] rounded-[1px] bg-rw-black/90" />
+    <span
+      className="rounded-[1px] px-1 [-webkit-box-decoration-break:clone] [box-decoration-break:clone]"
+      style={{ backgroundColor: '#000', color: 'rgba(240,240,238,0.26)' }}
+    >
+      {children}
     </span>
   );
 }

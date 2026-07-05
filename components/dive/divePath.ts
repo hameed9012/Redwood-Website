@@ -31,10 +31,11 @@ export const HORIZON_POSE: DivePose = {
   up: [0, 1, 0],
 };
 
-/** Just under the surface, level, so fish drift across frame (not black below). */
+/** Down in open water: aimed into the fish column and the murk below, NOT at the
+ *  shallow floor (which read as "2 feet deep"). The bed sits far under this. */
 export const DEEP_POSE: DivePose = {
-  position: [0, -2, 18],
-  target: [0, -6, -12],
+  position: [0, -4, 17],
+  target: [0, -9, -13],
   up: [0, 1, 0],
 };
 

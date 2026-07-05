@@ -68,11 +68,16 @@ export function useScrollDive(): MutableRefObject<number> {
     };
   }, []);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     if (frozen.current) return;
     const sy = typeof window !== 'undefined' ? window.scrollY : 0; // cheap: no layout
-    const p = diveProgressFromScroll(sy, startPx.current, endPx.current);
-    progress.current = p;
+    const target = diveProgressFromScroll(sy, startPx.current, endPx.current);
+    // Ease progress toward the scroll target instead of snapping 1:1 — the
+    // camera glides through the surface→level→deep reorientation so it reads as
+    // an animation rather than a raw scroll scrub. Frame-rate independent.
+    const k = 1 - Math.exp(-6 * Math.min(delta, 0.05));
+    progress.current += (target - progress.current) * k;
+    const p = progress.current;
 
     const pose = divePose(p);
     const idle = 1 - p; // surface breathing fades as we sink

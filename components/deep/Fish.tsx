@@ -50,7 +50,7 @@ export function Fish({ count = 8, seed = 4242 }: { count?: number; seed?: number
         key: i,
         scale: 0.5 + rand() * 0.7,
         cx,
-        cy: -6 - rand() * 4, // mid-depth to just above the bed
+        cy: -5 - rand() * 9, // spread down the water column (mid to deep)
         cz,
         rangeX: 6 + rand() * 8,
         speed: 0.15 + rand() * 0.25,
