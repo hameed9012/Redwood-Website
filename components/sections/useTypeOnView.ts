@@ -60,6 +60,11 @@ export function useTypeOnView(full: string, speed = 18): TypeOnView {
   useEffect(() => {
     if (!started) return;
     if (shownRef.current >= full.length) return;
+    // Respect reduced-motion: reveal the whole text at once instead of typing.
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setShown(full.length);
+      return;
+    }
     const timer = setInterval(() => {
       const next = typeAdvance(shownRef.current, full.length);
       setShown(next);

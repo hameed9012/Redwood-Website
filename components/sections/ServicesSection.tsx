@@ -1,29 +1,30 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ComponentType, type SVGProps } from 'react';
 import { Section } from './Section';
+import { FlaskIcon, TruckIcon, TentIcon } from '@/components/icons';
 
 interface Service {
   name: string;
   blurb: string;
-  glyph: string;
+  Icon: ComponentType<SVGProps<SVGSVGElement>>;
 }
 
 const SERVICES: Service[] = [
   {
     name: 'Pharmaceutical Supply',
     blurb: 'Sedatives, anaesthetics, and controlled compounds delivered into pharmacy and partner supply chains at volume.',
-    glyph: '⬡',
+    Icon: FlaskIcon,
   },
   {
     name: 'Logistics',
     blurb: 'Bulk liquid transport via our own tanker fleet — discreet routing, temperature-held, no shipment too large.',
-    glyph: '◈',
+    Icon: TruckIcon,
   },
   {
     name: 'Camping Equipment',
     blurb: 'Our retail storefront on Valley Drive. Tents, coolers, rope, and quiet-water gear for the serious outdoorsman.',
-    glyph: '△',
+    Icon: TentIcon,
   },
 ];
 
@@ -71,7 +72,7 @@ export function ServicesSection() {
               shown ? 'scale-100 opacity-100' : 'scale-90 opacity-0'
             }`}
           >
-            <span aria-hidden className="text-2xl text-rw-red/70">{s.glyph}</span>
+            <s.Icon className="h-7 w-7 text-rw-red/70" />
             <h3 className="mt-3 text-lg font-bold text-rw-bone">{s.name}</h3>
             <p className="mt-2 flex-1 text-sm leading-relaxed text-rw-bone/70">{s.blurb}</p>
             <p className="mt-4 text-xs italic text-rw-bone/45">Wholesale and contract inquiries only.</p>
