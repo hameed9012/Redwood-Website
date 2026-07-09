@@ -9,12 +9,10 @@ describe('advanceStatus', () => {
   });
 });
 
-describe('portal lore data', () => {
-  it('ships non-empty, well-formed content', () => {
-    expect(ASSIGNMENTS.length).toBeGreaterThan(0);
-    expect(NOTICES.length).toBeGreaterThan(0);
-    expect(ORG.length).toBeGreaterThan(0);
-    for (const t of ASSIGNMENTS) expect(t.id).toMatch(/^T-\d+$/);
-    for (const d of ORG) expect(d.name).toBeTruthy();
+describe('portal content data', () => {
+  it('exposes the content arrays (start empty — populated by the user)', () => {
+    expect(Array.isArray(ASSIGNMENTS)).toBe(true);
+    expect(Array.isArray(NOTICES)).toBe(true);
+    expect(Array.isArray(ORG)).toBe(true);
   });
 });

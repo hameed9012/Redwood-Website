@@ -1,4 +1,5 @@
 import { PortalShell } from '@/components/portal/PortalShell';
+import { EmptyState } from '@/components/portal/EmptyState';
 import { ORG, type Person } from '@/lib/portal/content';
 
 function PersonRow({ person, head }: { person: Person; head?: boolean }) {
@@ -21,11 +22,9 @@ function PersonRow({ person, head }: { person: Person; head?: boolean }) {
 export default function PersonnelPage() {
   return (
     <PortalShell required="employee" title="Personnel">
-      <p className="text-sm text-rw-bone/55">
-        The org chart, and who reports to whom. It is mostly accurate.
-      </p>
+      {ORG.length === 0 && <EmptyState note="No personnel listed." />}
 
-      <div className="mt-8 space-y-8">
+      <div className="space-y-8">
         {ORG.map((dept) => (
           <section key={dept.name}>
             <h2 className="font-mono text-sm uppercase tracking-[0.2em] text-rw-red/70">{dept.name}</h2>

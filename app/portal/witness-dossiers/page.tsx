@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { PortalShell } from '@/components/portal/PortalShell';
+import { EmptyState } from '@/components/portal/EmptyState';
 import { Document } from '@/components/portal/Document';
 import { DOSSIERS, DOSSIER_STATUS_LABEL, type DossierStatus } from '@/lib/portal/highCommand';
 
@@ -17,11 +18,9 @@ export default function WitnessDossiersPage() {
 
   return (
     <PortalShell required="high-command" title="Witness Dossiers">
-      <p className="text-sm text-rw-bone/55">
-        Persons of ongoing interest. Retained at High Command clearance only. Do not discuss below this room.
-      </p>
+      {DOSSIERS.length === 0 && <EmptyState note="No dossiers on file." />}
 
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {DOSSIERS.map((d) => (
           <button
             key={d.id}

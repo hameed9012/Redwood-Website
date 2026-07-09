@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { PortalShell } from '@/components/portal/PortalShell';
+import { EmptyState } from '@/components/portal/EmptyState';
 import { ASSIGNMENTS, TASK_STATUS_LABEL, advanceStatus, type TaskStatus } from '@/lib/portal/content';
 
 const STATUS_STYLE: Record<TaskStatus, string> = {
@@ -17,11 +18,9 @@ export default function AssignmentsPage() {
 
   return (
     <PortalShell required="employee" title="Assignments">
-      <p className="text-sm text-rw-bone/55">
-        Your current tasks. Tap the status to advance it. Nothing here is saved — but do them anyway.
-      </p>
+      {ASSIGNMENTS.length === 0 && <EmptyState note="No assignments." />}
 
-      <ul className="mt-8 space-y-3">
+      <ul className="space-y-3">
         {ASSIGNMENTS.map((t) => {
           const status = statuses[t.id];
           return (

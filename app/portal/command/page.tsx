@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { PortalShell } from '@/components/portal/PortalShell';
+import { EmptyState } from '@/components/portal/EmptyState';
 import { Redacted } from '@/components/portal/Document';
 import { DIRECTIVES, LEDGER } from '@/lib/portal/highCommand';
 
@@ -10,11 +11,17 @@ const fmt = (n: number) => `$${n.toLocaleString('en-US')}`;
 export default function CommandPage() {
   const [reconsidering, setReconsidering] = useState(false);
 
+  if (DIRECTIVES.length === 0 && LEDGER.length === 0) {
+    return (
+      <PortalShell required="high-command" title="Command">
+        <EmptyState note="No directives or ledger entries yet." />
+      </PortalShell>
+    );
+  }
+
   return (
     <PortalShell required="high-command" title="Command">
-      <p className="text-sm text-rw-bone/55">Directives, and the deep ledger. This is the last room.</p>
-
-      <section className="mt-8">
+      <section className="mt-2">
         <h2 className="text-xs uppercase tracking-[0.3em] text-rw-red/80">Standing directives</h2>
         <ol className="mt-4 space-y-2">
           {DIRECTIVES.map((d) => (

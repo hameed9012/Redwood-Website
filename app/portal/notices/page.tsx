@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { PortalShell } from '@/components/portal/PortalShell';
+import { EmptyState } from '@/components/portal/EmptyState';
 import { NOTICES } from '@/lib/portal/content';
 
 export default function NoticesPage() {
@@ -9,9 +10,9 @@ export default function NoticesPage() {
 
   return (
     <PortalShell required="recruit" title="Notices">
-      <p className="text-sm text-rw-bone/55">Company-wide. Most of it is nothing. Read it anyway.</p>
+      {NOTICES.length === 0 && <EmptyState note="No notices posted." />}
 
-      <ul className="mt-8 space-y-3">
+      <ul className="mt-4 space-y-3">
         {NOTICES.map((n) => {
           const isRead = !!read[n.id];
           return (

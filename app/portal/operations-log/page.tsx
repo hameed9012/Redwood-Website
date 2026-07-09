@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { PortalShell } from '@/components/portal/PortalShell';
+import { EmptyState } from '@/components/portal/EmptyState';
 import {
   OPS_RUNS,
   RUN_STATUS_LABEL,
@@ -30,13 +31,17 @@ export default function OperationsLogPage() {
   const [sort, setSort] = useState<SortDir>('desc');
   const rows = useMemo(() => selectRuns(OPS_RUNS, status, sort), [status, sort]);
 
+  if (OPS_RUNS.length === 0) {
+    return (
+      <PortalShell required="employee" title="Operations Log">
+        <EmptyState note="No runs logged." />
+      </PortalShell>
+    );
+  }
+
   return (
     <PortalShell required="employee" title="Operations Log">
-      <p className="text-sm text-rw-bone/55">
-        Nightly runs and shipment manifests. Cargo is industrial solvent. It is always industrial solvent.
-      </p>
-
-      <div className="mt-6 flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {FILTERS.map((f) => (
           <button
             key={f.value}

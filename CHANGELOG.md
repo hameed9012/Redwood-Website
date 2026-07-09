@@ -22,7 +22,7 @@ okay so the login actually goes somewhere now. before, you'd type your secret na
 - the history section's auto-typing now respects "reduce motion" and just shows the full text if your system asks for less animation.
 
 ### heads up
-none of the portal stuff saves — "mark read", the task statuses, all of it resets on reload. it's in-character set dressing, not a real task manager. and yeah, the whole company is deeply sinister — that's the point :D
+the portal sections ship **empty** — the structure/UI is all there (tables, the classified-doc frame, filters, etc.) but there's no content in them yet; each just shows a little "nothing here yet" until you drop your own entries into `lib/portal/*`. and none of the portal interactivity saves — "mark read", task statuses, all resets on reload. it's set dressing, not a real backend :D
 
 ---
 
