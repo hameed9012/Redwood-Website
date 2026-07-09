@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { Environment } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
+import { SafeEnvironment } from './SafeEnvironment';
 import { TankScene } from './TankScene';
 import { detectTierFromBrowser, qualityFor, type QualityProfile } from './quality';
 import { useFreeze, FreezeBridge } from './puzzle/useFreeze';
@@ -37,7 +37,7 @@ export function HeroTank({ onDrained }: { onDrained?: () => void } = {}) {
     >
       <FreezeBridge freezeRef={frozen}>
         <PuzzleBridge value={puzzle}>
-          <Environment files={quality.hdriPath} environmentIntensity={1.8} />
+          <SafeEnvironment files={quality.hdriPath} environmentIntensity={1.8} />
           <TankScene registry={registry} quality={quality} onDrained={onDrained} />
           {/* Lean postprocessing — DepthOfField + ChromaticAberration dropped: profiling
               (R2-11) showed the scene is fill-rate bound at 1920px and DoF was the
