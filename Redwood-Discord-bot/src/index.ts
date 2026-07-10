@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Client, GatewayIntentBits, REST, Routes, Events, MessageFlags } from 'discord.js';
+import { Client, GatewayIntentBits, Partials, REST, Routes, Events, MessageFlags } from 'discord.js';
 import { config } from './lib/config';
 import { commands, commandMap } from './commands/index';
 import { hasHighCommandRole } from './lib/permissions';
@@ -9,6 +9,7 @@ import { redrawRoster } from './roster/render';
 import * as memberAdd from './events/guildMemberAdd';
 import * as messageCreate from './events/messageCreate';
 import * as auditLog from './events/guildAuditLogEntryCreate';
+import { loggingHandlers } from './events/logging';
 
 const cfg = config(); // validates env; throws with a clear message if misconfigured
 
@@ -20,6 +21,8 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildModeration,
   ],
+  // Needed so delete/edit events fire for messages not in the cache.
+  partials: [Partials.Message, Partials.Channel],
 });
 
 async function registerCommands(): Promise<void> {
@@ -39,6 +42,7 @@ client.once(Events.ClientReady, async (c) => {
 client.on(memberAdd.name, memberAdd.execute);
 client.on(messageCreate.name, messageCreate.execute);
 client.on(auditLog.name, auditLog.execute);
+for (const h of loggingHandlers) client.on(h.name, h.execute as (...args: unknown[]) => void);
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand() || !interaction.guild) return;
