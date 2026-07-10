@@ -7,6 +7,9 @@ export function line(tone: Tone, text: string): string {
   return `${PREFIX[tone]} ${text}`;
 }
 
+/** The employee handbook lives as a shared Google Doc. */
+export const HANDBOOK_URL = 'https://docs.google.com/document/d/1dpfaXcTQqQbfbVbtTr03KcfCZvaA5V5NKdrbqv8leQo/edit?usp=drivesdk';
+
 export const HANDBOOK = [
   '**Redwood Peak — Employee Handbook**',
   '',
