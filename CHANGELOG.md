@@ -1,5 +1,31 @@
 # Redwood Peak — Changelog
 
+## v0.5.0 — behind the door (the members area is real now)
+
+okay so the login actually goes somewhere now. before, you'd type your secret name and land in a portal that was just… locked cards. now every card opens into a real page. the whole employee side is filled in — this is phases 5, 6 and 7 in one go, which means the build is basically feature-complete: everything from the water tank to the last room is in.
+
+### the employee stuff (Recruit + Employee clearance)
+- **Orientation** — the new-hire handbook. a first-day checklist, the "core values", and a code of conduct that starts normal and gets… less normal toward the bottom. read the end.
+- **Notices** — the company bulletin board. mostly boring (coffee machine, parking), a couple that aren't (the north gate, the river survey that keeps getting postponed). you can mark them read.
+- **Personnel** — the org chart. departments + who reports to whom. one department has no name, just a box.
+- **Operations Log** — the shipment manifests as an actual table. filter by status, sort by date. cargo is industrial solvent. it's always industrial solvent. some manifests are sealed.
+- **Assignments** — your task list. tap a status to advance it (open → in progress → done). a couple of the tasks are chores you'd rather not have.
+
+### the high command stuff (top clearance only)
+- **Witness Dossiers** — persons of ongoing interest. click one and it opens as a proper classified document — classification stripe, ref number, the works. watched / relocated / resolved. don't ask about resolved.
+- **Command** — the last room. standing directives + "the deep ledger" (a money table where half the counterparties are redacted and the totals don't add up, on purpose). there's a Purge button. it does nothing. it asks you to reconsider.
+
+### polish (phase 7)
+- built a shared "classified document" component + a reusable redaction bar — the media redactions and the ledger now use the exact same thing.
+- swapped the placeholder emoji/glyphs for a proper little icon set (the service tiles, the locks) — real SVGs now, one consistent style.
+- the portal pages are **lightweight** — they do NOT load the big 3D water bundle, so they open instantly. that heavy stuff only lives on the landing page.
+- the history section's auto-typing now respects "reduce motion" and just shows the full text if your system asks for less animation.
+
+### heads up
+the portal sections ship **empty** — the structure/UI is all there (tables, the classified-doc frame, filters, etc.) but there's no content in them yet; each just shows a little "nothing here yet" until you drop your own entries into `lib/portal/*`. and none of the portal interactivity saves — "mark read", task statuses, all resets on reload. it's set dressing, not a real backend :D
+
+---
+
 ## v0.4.0 — okay here's the whole thing so far
 
 alright so i never wrote these up properly and the old changelogs were WAY too dramatic lmao, so i nuked all of them and this is one clean "from nothing to now" dump. if you're seeing the site for the first time, this is the entire tour in one place.
