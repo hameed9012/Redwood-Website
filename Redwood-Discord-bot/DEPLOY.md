@@ -41,3 +41,18 @@ journalctl -u redwood-bot -f      # watch logs
 - `/roster-setup #roster` — posts the live roster message.
 - `/hire @someone employee` — hire your first member; watch the roster message update itself.
 - `/help` — read the handbook.
+
+## v1.1 upgrade (identities + shifts + portal pages)
+
+**Bot server (Ubuntu):**
+1. Run `db/schema-v1.1.sql` once in the Supabase SQL editor (after the v1 schema).
+2. `cd ~/Redwood-Website && git pull`
+3. `cd Redwood-Discord-bot && npm install && npm run build`
+4. `pm2 restart redwood-bot`
+5. New commands appear on next startup: `/identity create|rotate|view`, `/shift start|log|party|end|report|status`. `/hire` is gone — use `/identity create`.
+
+**Website (Vercel):**
+1. Add two **server-side** env vars in the Vercel project (NOT prefixed `NEXT_PUBLIC`):
+   - `SUPABASE_URL` — your project URL
+   - `SUPABASE_SERVICE_KEY` — the service_role key
+2. Redeploy. The Personnel, Operations Log, and Witness Dossiers portal cards now open real pages that read live data.
