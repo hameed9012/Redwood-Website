@@ -40,12 +40,17 @@ export interface IncidentRow {
   createdAt: string;
 }
 
+export interface FirearmLite { serial: string; kind: string; discordId: string; status: 'clean' | 'flagged'; flagNote: string | null; issuedAt: string; ownerCover: string; ownerEmployee: string; }
+export interface VehicleLite { plate: string; description: string; discordId: string; status: 'clean' | 'flagged'; flagNote: string | null; issuedAt: string; ownerCover: string; ownerEmployee: string; }
+
 /** Everything the I/O layer gathers for the pure resolver to assemble. */
 export interface LookupData {
   members: MemberLite[];
   identities: IdentityLite[];
   parties: PartyRow[];
   incidents: IncidentRow[];
+  firearms: FirearmLite[];
+  vehicles: VehicleLite[];
 }
 
 export interface IncidentLine {
@@ -72,8 +77,10 @@ export type LookupResult =
       cover: CoverView | null; // null = redacted (non-HC)
       pastIdentities: string[] | null; // null = redacted (non-HC)
       incidents: IncidentLine[];
+      registeredGear: string[] | null; // null = redacted (non-HC)
     }
-  | { kind: 'outsider-dossier'; label: string; role: Role; incidents: IncidentLine[]; alsoSeen: string[] }
+  | { kind: 'outsider-dossier'; label: string; role: Role; incidents: IncidentLine[]; alsoSeen: string[]; notOnFile: boolean }
+  | { kind: 'registration'; itemType: 'firearm' | 'vehicle'; label: string; detail: string; status: 'clean' | 'flagged'; flagNote: string | null; issued: string; owner: string | null }
   | { kind: 'disambiguation'; matches: { label: string; kind: 'member' | 'outsider' }[] }
   | { kind: 'not-found' };
 
@@ -116,6 +123,10 @@ function memberFile(member: MemberLite, data: LookupData, viewerIsHC: boolean): 
     } : null,
     pastIdentities: viewerIsHC ? own.filter((i) => i.status === 'retired').map((i) => i.legalName) : null,
     incidents,
+    registeredGear: viewerIsHC ? [
+      ...data.firearms.filter((f) => f.discordId === member.discordId).map((f) => `${f.serial} — ${f.kind}${f.status === 'flagged' ? ' (flagged)' : ''}`),
+      ...data.vehicles.filter((v) => v.discordId === member.discordId).map((v) => `${v.plate} — ${v.description}${v.status === 'flagged' ? ' (flagged)' : ''}`),
+    ] : null,
   };
 }
 
@@ -142,7 +153,8 @@ function outsiderDossier(label: string, data: LookupData): Extract<LookupResult,
       .flatMap((p) => [p.plate, p.badge, p.name, p.coverName])
       .filter((v): v is string => !!v && !equalsCi(v, label)),
   )];
-  return { kind: 'outsider-dossier', label, role, incidents, alsoSeen };
+  const onFile = data.firearms.some((f) => equalsCi(f.serial, label)) || data.vehicles.some((v) => equalsCi(v.plate, label));
+  return { kind: 'outsider-dossier', label, role, incidents, alsoSeen, notOnFile: !onFile };
 }
 
 export function buildLookupResult(query: Query, data: LookupData, viewerIsHC: boolean): LookupResult {
@@ -152,6 +164,23 @@ export function buildLookupResult(query: Query, data: LookupData, viewerIsHC: bo
   }
 
   const text = query.text;
+
+  // Exact registry match (serial or plate) wins over name/incident matches.
+  const fw = data.firearms.find((f) => equalsCi(f.serial, text));
+  const vh = data.vehicles.find((v) => equalsCi(v.plate, text));
+  if (fw || vh) {
+    const reg = (fw ?? vh)!;
+    return {
+      kind: 'registration',
+      itemType: fw ? 'firearm' : 'vehicle',
+      label: fw ? fw.serial : vh!.plate,
+      detail: fw ? fw.kind : vh!.description,
+      status: reg.status,
+      flagNote: reg.flagNote,
+      issued: reg.issuedAt.slice(0, 10),
+      owner: viewerIsHC ? `${reg.ownerCover} (${reg.ownerEmployee})` : null,
+    };
+  }
 
   // Internal members: matched by employee name; HC also bridges cover legal name → member.
   const internal = new Map<string, MemberLite>();

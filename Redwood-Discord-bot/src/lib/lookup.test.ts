@@ -22,7 +22,7 @@ describe('classifyQuery', () => {
 });
 
 describe('buildLookupResult — member file', () => {
-  const data: LookupData = { members: [member], identities: [identity], parties: [], incidents: [incident] };
+  const data: LookupData = { members: [member], identities: [identity], parties: [], incidents: [incident], firearms: [], vehicles: [] };
 
   it('member query builds a file; HC sees the cover + SSN', () => {
     const r = buildLookupResult({ kind: 'member', discordId: 'm1' }, data, true);
@@ -43,7 +43,7 @@ describe('buildLookupResult — member file', () => {
 });
 
 describe('buildLookupResult — cover unmasking rule', () => {
-  const data: LookupData = { members: [member], identities: [identity], parties: [], incidents: [] };
+  const data: LookupData = { members: [member], identities: [identity], parties: [], incidents: [], firearms: [], vehicles: [] };
 
   it('HC looking up a cover legal name resolves to the employee', () => {
     const r = buildLookupResult({ kind: 'text', text: 'David Whitaker' }, data, true);
@@ -63,7 +63,7 @@ describe('buildLookupResult — outsider + disambiguation + not-found', () => {
     { role: 'officer' as const, name: null, coverName: null, plate: null, badge: '4471', unit: 'K-9', incidentId: 'inc1' },
     { role: 'civilian' as const, name: 'Reed Vance', coverName: null, plate: 'XY-2210', badge: null, unit: null, incidentId: 'inc1' },
   ];
-  const data: LookupData = { members: [], identities: [], parties, incidents: [incident] };
+  const data: LookupData = { members: [], identities: [], parties, incidents: [incident], firearms: [], vehicles: [] };
 
   it('a badge with no internal owner is an outsider dossier with co-occurring identifiers', () => {
     const r = buildLookupResult({ kind: 'text', text: '4471' }, data, false);
@@ -78,7 +78,7 @@ describe('buildLookupResult — outsider + disambiguation + not-found', () => {
   it('a text matching several subjects returns a disambiguation list', () => {
     const many: LookupData = {
       members: [member, { ...member, discordId: 'm2', employeeName: 'Adam Sokolov' }],
-      identities: [], parties: [], incidents: [],
+      identities: [], parties: [], incidents: [], firearms: [], vehicles: [],
     };
     const r = buildLookupResult({ kind: 'text', text: 'Adam' }, many, false);
     expect(r.kind).toBe('disambiguation');
@@ -87,6 +87,52 @@ describe('buildLookupResult — outsider + disambiguation + not-found', () => {
   });
 
   it('nothing matches → not-found', () => {
-    expect(buildLookupResult({ kind: 'text', text: 'nobody' }, { members: [], identities: [], parties: [], incidents: [] }, true).kind).toBe('not-found');
+    expect(buildLookupResult({ kind: 'text', text: 'nobody' }, { members: [], identities: [], parties: [], incidents: [], firearms: [], vehicles: [] }, true).kind).toBe('not-found');
+  });
+});
+
+import type { FirearmLite, VehicleLite } from './lookup';
+
+const firearm: FirearmLite = { serial: 'RW-482910', kind: 'Pistol', discordId: 'm1', status: 'flagged', flagNote: 'recovered at scene', issuedAt: '2026-07-11T00:00:00Z', ownerCover: 'David Whitaker', ownerEmployee: 'Adam Marcuz' };
+const vehicle: VehicleLite = { plate: 'XY-2210', description: 'Black sedan', discordId: 'm1', status: 'clean', flagNote: null, issuedAt: '2026-07-11T00:00:00Z', ownerCover: 'David Whitaker', ownerEmployee: 'Adam Marcuz' };
+
+describe('buildLookupResult — registrations', () => {
+  const data: LookupData = { members: [member], identities: [identity], parties: [], incidents: [], firearms: [firearm], vehicles: [vehicle] };
+
+  it('exact serial → registration; HC sees owner, non-HC redacted', () => {
+    const hc = buildLookupResult({ kind: 'text', text: 'RW-482910' }, data, true);
+    expect(hc.kind).toBe('registration');
+    if (hc.kind !== 'registration') return;
+    expect(hc.status).toBe('flagged');
+    expect(hc.owner).toContain('Adam Marcuz');
+    const non = buildLookupResult({ kind: 'text', text: 'RW-482910' }, data, false);
+    if (non.kind !== 'registration') return;
+    expect(non.owner).toBeNull();
+  });
+
+  it('exact plate → vehicle registration', () => {
+    const r = buildLookupResult({ kind: 'text', text: 'XY-2210' }, data, true);
+    expect(r.kind).toBe('registration');
+    if (r.kind !== 'registration') return;
+    expect(r.itemType).toBe('vehicle');
+  });
+
+  it('HC member file lists registered gear; non-HC does not', () => {
+    const hc = buildLookupResult({ kind: 'member', discordId: 'm1' }, data, true);
+    if (hc.kind !== 'member-file') return;
+    expect(hc.registeredGear).not.toBeNull();
+    expect(hc.registeredGear!.join(' ')).toContain('RW-482910');
+    const non = buildLookupResult({ kind: 'member', discordId: 'm1' }, data, false);
+    if (non.kind !== 'member-file') return;
+    expect(non.registeredGear).toBeNull();
+  });
+
+  it('a plate only seen in incidents is an outsider marked not on file', () => {
+    const parties = [{ role: 'civilian' as const, name: null, coverName: null, plate: 'ZZ-9999', badge: null, unit: null, incidentId: 'inc1' }];
+    const d: LookupData = { members: [], identities: [], parties, incidents: [incident], firearms: [], vehicles: [] };
+    const r = buildLookupResult({ kind: 'text', text: 'ZZ-9999' }, d, false);
+    expect(r.kind).toBe('outsider-dossier');
+    if (r.kind !== 'outsider-dossier') return;
+    expect(r.notOnFile).toBe(true);
   });
 });

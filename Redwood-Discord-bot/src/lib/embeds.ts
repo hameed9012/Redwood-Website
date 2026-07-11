@@ -143,10 +143,20 @@ export function lookupEmbed(result: LookupResult): EmbedBuilder {
   if (result.kind === 'outsider-dossier') {
     return baseEmbed('info', 'Records')
       .setTitle(`Outsider · ${result.label}`)
-      .setDescription(`Role: ${result.role}`)
+      .setDescription(`Role: ${result.role}${result.notOnFile ? ' · not on file' : ''}`)
       .addFields(
         { name: 'Appearances', value: incidentsValue(result.incidents) },
         { name: 'Also seen with', value: result.alsoSeen.length ? result.alsoSeen.slice(0, 20).join(', ') : '—' },
+      );
+  }
+  if (result.kind === 'registration') {
+    return baseEmbed(result.status === 'flagged' ? 'warning' : 'info', 'Records')
+      .setTitle(`${result.itemType === 'firearm' ? 'Firearm' : 'Vehicle'} · ${result.label}`)
+      .setDescription(result.detail)
+      .addFields(
+        { name: 'Status', value: result.status === 'flagged' ? `⚠ Flagged${result.flagNote ? ` — ${result.flagNote}` : ''}` : 'Clean', inline: true },
+        { name: 'Issued', value: result.issued, inline: true },
+        { name: 'Registered to', value: result.owner ?? REDACTED },
       );
   }
   const e = baseEmbed('info', 'Personnel')
@@ -156,7 +166,17 @@ export function lookupEmbed(result: LookupResult): EmbedBuilder {
       { name: 'Legal name (cover)', value: result.cover ? result.cover.legalName : REDACTED, inline: true },
       { name: 'SSN', value: result.cover ? `\`${result.cover.ssn}\`` : REDACTED, inline: true },
       { name: 'Past identities', value: result.pastIdentities === null ? REDACTED : (result.pastIdentities.length ? result.pastIdentities.join(', ') : '—') },
+      { name: 'Registered gear', value: result.registeredGear === null ? REDACTED : (result.registeredGear.length ? result.registeredGear.join('\n') : '—') },
       { name: 'Incidents', value: incidentsValue(result.incidents) },
     );
   return e;
+}
+
+export function registrationEmbed(itemType: 'firearm' | 'vehicle', label: string, detail: string, ownerCover: string): EmbedBuilder {
+  return baseEmbed('success', 'Records')
+    .setTitle(`${itemType === 'firearm' ? 'Serial issued' : 'Vehicle registered'} · ${label}`)
+    .addFields(
+      { name: itemType === 'firearm' ? 'Firearm' : 'Vehicle', value: detail, inline: true },
+      { name: 'Registered to', value: ownerCover, inline: true },
+    );
 }

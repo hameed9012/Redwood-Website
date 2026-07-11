@@ -108,15 +108,30 @@ import type { LookupResult } from './lookup';
 
 describe('lookupEmbed', () => {
   it('member file: HC cover shows, redaction marker when cover is null', () => {
-    const hc: LookupResult = { kind: 'member-file', employeeName: 'Adam Marcuz', rank: 'employee', dismissed: false, cover: { legalName: 'David Whitaker', dob: '1994-03-12', ssn: '462-88-1174', idNumber: 'D48120394', bloodType: 'A-', nextOfKin: 'Karen Lopez — spouse' }, pastIdentities: [], incidents: [] };
+    const hc: LookupResult = { kind: 'member-file', employeeName: 'Adam Marcuz', rank: 'employee', dismissed: false, cover: { legalName: 'David Whitaker', dob: '1994-03-12', ssn: '462-88-1174', idNumber: 'D48120394', bloodType: 'A-', nextOfKin: 'Karen Lopez — spouse' }, pastIdentities: [], incidents: [], registeredGear: [] };
     expect(JSON.stringify(lookupEmbed(hc).toJSON())).toContain('462-88-1174');
     const nonHc: LookupResult = { ...hc, cover: null, pastIdentities: null };
     expect(JSON.stringify(lookupEmbed(nonHc).toJSON())).toContain('▓');
   });
 
   it('outsider, disambiguation, and not-found each render a title', () => {
-    expect(lookupEmbed({ kind: 'outsider-dossier', label: '4471', role: 'officer', incidents: [], alsoSeen: [] }).toJSON().title).toContain('4471');
+    expect(lookupEmbed({ kind: 'outsider-dossier', label: '4471', role: 'officer', incidents: [], alsoSeen: [], notOnFile: false }).toJSON().title).toContain('4471');
     expect(lookupEmbed({ kind: 'disambiguation', matches: [{ label: 'A', kind: 'member' }, { label: 'B', kind: 'outsider' }] }).toJSON().title).toBeTruthy();
     expect(lookupEmbed({ kind: 'not-found' }).toJSON().title).toBeTruthy();
+  });
+});
+
+import { registrationEmbed } from './embeds';
+
+describe('registry embeds', () => {
+  it('lookup registration: flagged is warning tone and shows owner for HC', () => {
+    const j = lookupEmbed({ kind: 'registration', itemType: 'firearm', label: 'RW-482910', detail: 'Pistol', status: 'flagged', flagNote: 'recovered', issued: '2026-07-11', owner: 'David Whitaker (Adam Marcuz)' }).toJSON();
+    expect(j.color).toBe(TONE_COLOR.warning);
+    expect(JSON.stringify(j)).toContain('Adam Marcuz');
+  });
+
+  it('registrationEmbed renders the issued serial', () => {
+    const j = registrationEmbed('firearm', 'RW-482910', 'Pistol', 'David Whitaker').toJSON();
+    expect(j.title).toContain('RW-482910');
   });
 });
