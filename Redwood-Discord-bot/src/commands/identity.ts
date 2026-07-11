@@ -8,6 +8,7 @@ import { getMember } from '../db/members';
 import { getActiveIdentity, issueIdentity } from '../db/identities';
 import { generateIdentity, guessGender } from '../lib/identityGen';
 import { applyRosterChange } from '../roster/apply';
+import { identityEmbed } from '../lib/embeds';
 
 async function targetMember(interaction: ChatInputCommandInteraction): Promise<GuildMember | null> {
   const user = interaction.options.getUser('user', true);
@@ -51,11 +52,10 @@ async function create(interaction: ChatInputCommandInteraction) {
   const employeeName = interaction.options.getString('name', true);
 
   const cover = generateIdentity(guessGender(employeeName));
-  await applyRosterChange(interaction.guild!, gm, newMember(gm.id, employeeName, rank), interaction.user.id, 'identity_create', rank);
-  await issueIdentity(gm.id, cover);
-  await interaction.editReply({
-    content: line('ok', `Onboarded **${employeeName}** as ${RANK_LABEL[rank]}. Cover issued under **${cover.legalName}**. Welcome to Redwood Peak.`),
-  });
+  const m = newMember(gm.id, employeeName, rank);
+  await applyRosterChange(interaction.guild!, gm, m, interaction.user.id, 'identity_create', rank);
+  const issued = await issueIdentity(gm.id, cover);
+  await interaction.editReply({ embeds: [identityEmbed(m, issued, 'Identity issued', 'success')] });
 }
 
 async function rotate(interaction: ChatInputCommandInteraction) {
@@ -64,8 +64,8 @@ async function rotate(interaction: ChatInputCommandInteraction) {
   const m = await getMember(gm.id);
   if (!m || m.status !== 'active') return void interaction.editReply({ content: line('deny', 'That member is not on the roster.') });
   const cover = generateIdentity(guessGender(m.employeeName));
-  await issueIdentity(gm.id, cover);
-  await interaction.editReply({ content: line('ok', `New papers for **${m.employeeName}** — now **${cover.legalName}**. The old cover is retired.`) });
+  const issued = await issueIdentity(gm.id, cover);
+  await interaction.editReply({ embeds: [identityEmbed(m, issued, 'New papers filed', 'success')] });
 }
 
 async function view(interaction: ChatInputCommandInteraction) {
@@ -73,21 +73,7 @@ async function view(interaction: ChatInputCommandInteraction) {
   const m = await getMember(user.id);
   const id = await getActiveIdentity(user.id);
   if (!m || !id) return void interaction.editReply({ content: line('err', 'No active identity on file for that member.') });
-  await interaction.editReply({
-    content: [
-      '```',
-      'REDWOOD PEAK — IDENTITY PACKET',
-      `Employee     : ${m.employeeName}`,
-      `Legal name   : ${id.legalName}`,
-      `DOB          : ${id.dob}`,
-      `SSN          : ${id.ssn}`,
-      `ID number    : ${id.idNumber}`,
-      `Blood type   : ${id.bloodType}`,
-      `Next of kin  : ${id.nextOfKin}`,
-      `Issued       : ${id.issuedAt.slice(0, 10)}`,
-      '```',
-    ].join('\n'),
-  });
+  await interaction.editReply({ embeds: [identityEmbed(m, id, 'Identity packet')] });
 }
 
 export const identityCommands: Command[] = [identity];
