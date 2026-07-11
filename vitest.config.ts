@@ -14,6 +14,13 @@ export default defineConfig({
     include: ['**/*.test.{ts,tsx}'],
   },
   resolve: {
-    alias: { '@': path.resolve(__dirname, '.') },
+    alias: {
+      '@': path.resolve(__dirname, '.'),
+      // The real `server-only` package always throws on import; Next.js aliases
+      // it away for server bundles at build time, but vitest has no such
+      // aliasing. Stub it so portal loader tests (which import serverClient.ts)
+      // can run without a real Next.js build.
+      'server-only': path.resolve(__dirname, 'lib/portal/__mocks__/server-only.ts'),
+    },
   },
 });

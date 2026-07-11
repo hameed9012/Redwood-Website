@@ -2,8 +2,6 @@ import { SlashCommandBuilder, MessageFlags, type ChatInputCommandInteraction, ty
 import type { Command } from './types';
 import { line } from '../lib/voice';
 import { RANKS, DIVISIONS, POSITIONS, RANK_LABEL, DIVISION_LABEL, POSITION_LABEL, nextRank, prevRank, isRank, isDivision, isPosition, type Division, type Position } from '../lib/ranks';
-import type { Rank } from '../lib/ranks';
-import type { Member } from '../lib/member';
 import { getMember } from '../db/members';
 import { applyRosterChange } from '../roster/apply';
 
@@ -13,31 +11,6 @@ async function targetMember(interaction: ChatInputCommandInteraction): Promise<G
   const user = interaction.options.getUser('user', true);
   return interaction.guild!.members.fetch(user.id).catch(() => null);
 }
-
-function newMember(discordId: string, employeeName: string, rank: Rank): Member {
-  const now = new Date().toISOString();
-  return { discordId, employeeName, rank, divisions: [], positions: [], status: 'active', joinedAt: now, updatedAt: now };
-}
-
-const hire: Command = {
-  highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('hire').setDescription('Hire a member at a rank.')
-    .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
-    .addStringOption((o) => o.setName('rank').setDescription('Starting rank').setRequired(true)
-      .addChoices(...RANKS.map((r) => ({ name: RANK_LABEL[r], value: r }))))
-    .addStringOption((o) => o.setName('employee_name').setDescription('Employee name (defaults to current nickname)')) as SlashCommandBuilder,
-  async execute(interaction) {
-    const gm = await targetMember(interaction);
-    if (!gm) return void interaction.reply({ content: line('err', 'That member is not in the server.'), ...EPH });
-    const existing = await getMember(gm.id);
-    if (existing?.status === 'active') return void interaction.reply({ content: line('deny', 'That member is already on the roster.'), ...EPH });
-    const rank = interaction.options.getString('rank', true);
-    if (!isRank(rank)) return void interaction.reply({ content: line('err', 'Unknown rank.'), ...EPH });
-    const name = interaction.options.getString('employee_name') ?? gm.displayName;
-    await applyRosterChange(interaction.guild!, gm, newMember(gm.id, name, rank), interaction.user.id, 'hire', rank);
-    await interaction.reply({ content: line('ok', `Hired **${name}** as ${RANK_LABEL[rank]}. Welcome to Redwood Peak.`), ...EPH });
-  },
-};
 
 async function moveRank(interaction: ChatInputCommandInteraction, dir: 'promote' | 'demote') {
   const gm = await targetMember(interaction);
@@ -166,4 +139,4 @@ const whois: Command = {
   },
 };
 
-export const rosterCommands: Command[] = [hire, promote, demote, setrank, division, position, dismiss, whois];
+export const rosterCommands: Command[] = [promote, demote, setrank, division, position, dismiss, whois];
