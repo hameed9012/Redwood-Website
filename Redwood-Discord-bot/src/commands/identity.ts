@@ -6,7 +6,7 @@ import type { Rank } from '../lib/ranks';
 import type { Member } from '../lib/member';
 import { getMember } from '../db/members';
 import { getActiveIdentity, issueIdentity } from '../db/identities';
-import { generateEmployeeName, generateIdentity } from '../lib/identityGen';
+import { generateIdentity } from '../lib/identityGen';
 import { applyRosterChange } from '../roster/apply';
 
 const EPH = { flags: MessageFlags.Ephemeral } as const;
@@ -26,6 +26,7 @@ const identity: Command = {
   data: new SlashCommandBuilder().setName('identity').setDescription('Identity packets.')
     .addSubcommand((s) => s.setName('create').setDescription('Onboard a member with a fresh identity.')
       .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
+      .addStringOption((o) => o.setName('name').setDescription('Their roleplay name (from their application)').setRequired(true))
       .addStringOption((o) => o.setName('rank').setDescription('Starting rank').setRequired(true)
         .addChoices(...RANKS.map((r) => ({ name: RANK_LABEL[r], value: r })))))
     .addSubcommand((s) => s.setName('rotate').setDescription('Issue new papers, keep the employee name.')
@@ -49,8 +50,8 @@ async function create(interaction: ChatInputCommandInteraction) {
   }
   const rank = interaction.options.getString('rank', true);
   if (!isRank(rank)) return void interaction.reply({ content: line('err', 'Unknown rank.'), ...EPH });
+  const employeeName = interaction.options.getString('name', true);
 
-  const employeeName = generateEmployeeName();
   const cover = generateIdentity();
   await applyRosterChange(interaction.guild!, gm, newMember(gm.id, employeeName, rank), interaction.user.id, 'identity_create', rank);
   await issueIdentity(gm.id, cover);

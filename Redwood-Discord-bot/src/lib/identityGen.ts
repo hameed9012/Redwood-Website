@@ -23,11 +23,6 @@ function twoName(rng: () => number): string {
   return `${pick(FIRST, rng)} ${pick(LAST, rng)}`;
 }
 
-/** Stable Redwood work name (becomes the nickname). */
-export function generateEmployeeName(rng: () => number = Math.random): string {
-  return twoName(rng);
-}
-
 /** Disposable civilian cover. Real formats, random values, fictional person. */
 export function generateIdentity(rng: () => number = Math.random): GeneratedIdentity {
   // SSN area: 001–899 excluding 666.

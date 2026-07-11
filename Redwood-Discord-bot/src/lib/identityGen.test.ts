@@ -1,15 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { generateEmployeeName, generateIdentity } from './identityGen';
+import { generateIdentity } from './identityGen';
 
 describe('identityGen', () => {
-  it('employee name is two capitalised words', () => {
-    for (let i = 0; i < 50; i++) {
-      const n = generateEmployeeName();
-      expect(n).toMatch(/^[A-Z][a-z]+ [A-Z][a-z]+$/);
-    }
-  });
-
-  it('legal name differs in shape from a raw pool word and is two words', () => {
+  it('legal name is two capitalised words', () => {
     for (let i = 0; i < 50; i++) {
       expect(generateIdentity().legalName).toMatch(/^[A-Z][a-z]+ [A-Z][a-z]+$/);
     }
