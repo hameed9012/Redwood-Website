@@ -4,6 +4,7 @@ import { line } from '../lib/voice';
 import { RANKS, DIVISIONS, POSITIONS, RANK_LABEL, DIVISION_LABEL, POSITION_LABEL, nextRank, prevRank, isRank, isDivision, isPosition, type Division, type Position } from '../lib/ranks';
 import { getMember } from '../db/members';
 import { applyRosterChange } from '../roster/apply';
+import { whoisEmbed } from '../lib/embeds';
 
 async function targetMember(interaction: ChatInputCommandInteraction): Promise<GuildMember | null> {
   const user = interaction.options.getUser('user', true);
@@ -123,16 +124,7 @@ const whois: Command = {
     const user = interaction.options.getUser('user', true);
     const m = await getMember(user.id);
     if (!m) return void interaction.editReply({ content: line('err', 'No file on that member.') });
-    const divs = m.divisions.map((d) => DIVISION_LABEL[d]).join(', ') || '—';
-    const pos = m.positions.map((p) => POSITION_LABEL[p]).join(', ') || '—';
-    await interaction.editReply({
-      content: [
-        `**${m.employeeName}** — ${RANK_LABEL[m.rank]}${m.status === 'dismissed' ? ' (dismissed)' : ''}`,
-        `Divisions: ${divs}`,
-        `Positions: ${pos}`,
-        `Hired: ${m.joinedAt.slice(0, 10)}`,
-      ].join('\n'),
-    });
+    await interaction.editReply({ embeds: [whoisEmbed(m)] });
   },
 };
 
