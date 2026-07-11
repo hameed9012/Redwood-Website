@@ -10,7 +10,7 @@ import { redrawRoster } from '../roster/render';
 
 const rosterSetup: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('roster-setup').setDescription('Post the live roster message in a channel.')
+  data: new SlashCommandBuilder().setName('roster-setup').setDescription('Post the live roster in a channel (it updates itself).')
     .addChannelOption((o) => o.setName('channel').setDescription('Channel for the roster').addChannelTypes(ChannelType.GuildText).setRequired(true)) as SlashCommandBuilder,
   async execute(interaction) {
     const picked = interaction.options.getChannel('channel', true);
@@ -24,7 +24,7 @@ const rosterSetup: Command = {
 
 const syncRoles: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('sync-roles').setDescription('Re-apply Discord roles from the roster for a member.')
+  data: new SlashCommandBuilder().setName('sync-roles').setDescription("Re-apply a member's Discord roles from the roster.")
     .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true)) as SlashCommandBuilder,
   async execute(interaction) {
     const cfg = config();

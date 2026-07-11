@@ -24,21 +24,21 @@ async function moveRank(interaction: ChatInputCommandInteraction, dir: 'promote'
 
 const promote: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('promote').setDescription('Promote a member one rank.')
+  data: new SlashCommandBuilder().setName('promote').setDescription('Move a member up one rank.')
     .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true)) as SlashCommandBuilder,
   execute: (i) => moveRank(i, 'promote'),
 };
 
 const demote: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('demote').setDescription('Demote a member one rank.')
+  data: new SlashCommandBuilder().setName('demote').setDescription('Move a member down one rank.')
     .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true)) as SlashCommandBuilder,
   execute: (i) => moveRank(i, 'demote'),
 };
 
 const setrank: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('setrank').setDescription('Set a member to a specific rank.')
+  data: new SlashCommandBuilder().setName('setrank').setDescription("Set a member's rank directly.")
     .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
     .addStringOption((o) => o.setName('rank').setDescription('Rank').setRequired(true)
       .addChoices(...RANKS.map((r) => ({ name: RANK_LABEL[r], value: r })))) as SlashCommandBuilder,
@@ -56,7 +56,7 @@ const setrank: Command = {
 
 const division: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('division').setDescription('Add or remove a division for a member.')
+  data: new SlashCommandBuilder().setName('division').setDescription('Add or remove a member from a division.')
     .addStringOption((o) => o.setName('action').setDescription('add or remove').setRequired(true)
       .addChoices({ name: 'add', value: 'add' }, { name: 'remove', value: 'remove' }))
     .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
@@ -79,7 +79,7 @@ const division: Command = {
 
 const position: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('position').setDescription('Add or remove a position for a member.')
+  data: new SlashCommandBuilder().setName('position').setDescription('Give or take away a member position.')
     .addStringOption((o) => o.setName('action').setDescription('add or remove').setRequired(true)
       .addChoices({ name: 'add', value: 'add' }, { name: 'remove', value: 'remove' }))
     .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
@@ -102,7 +102,7 @@ const position: Command = {
 
 const dismiss: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('dismiss').setDescription('Dismiss a member (strip standing).')
+  data: new SlashCommandBuilder().setName('dismiss').setDescription('Remove a member from the company.')
     .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
     .addStringOption((o) => o.setName('note').setDescription('Reason (optional)')) as SlashCommandBuilder,
   async execute(interaction) {
@@ -118,7 +118,7 @@ const dismiss: Command = {
 
 const whois: Command = {
   highCommandOnly: false,
-  data: new SlashCommandBuilder().setName('whois').setDescription("Show a member's file.")
+  data: new SlashCommandBuilder().setName('whois').setDescription("Look up a member's file.")
     .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true)) as SlashCommandBuilder,
   async execute(interaction) {
     const user = interaction.options.getUser('user', true);

@@ -13,9 +13,9 @@ const ROLES = ['civilian', 'officer', 'witness', 'other'] as const;
 
 const shift: Command = {
   highCommandOnly: false,
-  data: new SlashCommandBuilder().setName('shift').setDescription('On-duty records.')
+  data: new SlashCommandBuilder().setName('shift').setDescription('Log your on-duty time and activity.')
     .addSubcommand((s) => s.setName('start').setDescription('Go on duty.'))
-    .addSubcommand((s) => s.setName('log').setDescription('Record an incident this shift.')
+    .addSubcommand((s) => s.setName('log').setDescription('Record an incident from this shift.')
       .addStringOption((o) => o.setName('summary').setDescription('What happened').setRequired(true))
       .addStringOption((o) => o.setName('location').setDescription('Where').setRequired(true))
       .addStringOption((o) => o.setName('name').setDescription('Primary party name'))
@@ -24,7 +24,7 @@ const shift: Command = {
       .addStringOption((o) => o.setName('badge').setDescription('Officer badge'))
       .addStringOption((o) => o.setName('role').setDescription('Primary party role')
         .addChoices(...ROLES.map((r) => ({ name: r, value: r })))))
-    .addSubcommand((s) => s.setName('party').setDescription('Add another party to your latest incident.')
+    .addSubcommand((s) => s.setName('party').setDescription('Add another person to your latest incident.')
       .addStringOption((o) => o.setName('role').setDescription('Their role').setRequired(true)
         .addChoices(...ROLES.map((r) => ({ name: r, value: r }))))
       .addStringOption((o) => o.setName('name').setDescription('Name'))
@@ -37,7 +37,7 @@ const shift: Command = {
     .addSubcommand((s) => s.setName('report').setDescription('File a witness dossier for this shift.')
       .addStringOption((o) => o.setName('subject').setDescription('Who / what').setRequired(true))
       .addStringOption((o) => o.setName('body').setDescription('The account').setRequired(true)))
-    .addSubcommand((s) => s.setName('status').setDescription('Your current duty status.')) as SlashCommandBuilder,
+    .addSubcommand((s) => s.setName('status').setDescription('Check your current duty status.')) as SlashCommandBuilder,
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
     if (sub === 'start') return start(interaction);

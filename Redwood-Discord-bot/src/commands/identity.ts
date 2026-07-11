@@ -22,15 +22,15 @@ function newMember(discordId: string, employeeName: string, rank: Rank): Member 
 
 const identity: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('identity').setDescription('Identity packets.')
-    .addSubcommand((s) => s.setName('create').setDescription('Onboard a member with a fresh identity.')
+  data: new SlashCommandBuilder().setName('identity').setDescription('Create and manage member identities.')
+    .addSubcommand((s) => s.setName('create').setDescription('Onboard a member and issue their cover identity.')
       .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
       .addStringOption((o) => o.setName('name').setDescription('Their roleplay name (from their application)').setRequired(true))
       .addStringOption((o) => o.setName('rank').setDescription('Starting rank').setRequired(true)
         .addChoices(...RANKS.map((r) => ({ name: RANK_LABEL[r], value: r })))))
-    .addSubcommand((s) => s.setName('rotate').setDescription('Issue new papers, keep the employee name.')
+    .addSubcommand((s) => s.setName('rotate').setDescription('Issue a member fresh papers (keeps their name).')
       .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true)))
-    .addSubcommand((s) => s.setName('view').setDescription("Show a member's current packet.")
+    .addSubcommand((s) => s.setName('view').setDescription("Show a member's current identity packet.")
       .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))) as SlashCommandBuilder,
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
