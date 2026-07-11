@@ -61,3 +61,26 @@ describe('rosterEmbed', () => {
     expect((j.fields ?? []).find((f) => f.name === 'Employee')!.value).toContain('Adam Marcuz');
   });
 });
+
+import { shiftSummaryEmbed, shiftStatusEmbed, lockdownEmbed } from './embeds';
+
+describe('shift + lockdown cards', () => {
+  it('shift summary is success with duration/incidents/movements', () => {
+    const j = shiftSummaryEmbed('1h 30m', 2, 'Docks, Overpass').toJSON();
+    expect(j.color).toBe(TONE_COLOR.success);
+    const names = (j.fields ?? []).map((f) => f.name);
+    expect(names).toEqual(expect.arrayContaining(['Duration', 'Incidents filed', 'Movements']));
+    expect((j.fields ?? []).find((f) => f.name === 'Duration')!.value).toBe('1h 30m');
+  });
+
+  it('shift status reflects on/off duty', () => {
+    expect(shiftStatusEmbed(false).toJSON().title).toBe('Off duty');
+    expect(shiftStatusEmbed(true, '20m', 1).toJSON().title).toBe('On duty');
+  });
+
+  it('lockdown on is warning, off is info', () => {
+    expect(lockdownEmbed(true).toJSON().color).toBe(TONE_COLOR.warning);
+    expect(lockdownEmbed(true).toJSON().description).toContain('sealed');
+    expect(lockdownEmbed(false).toJSON().color).toBe(TONE_COLOR.info);
+  });
+});

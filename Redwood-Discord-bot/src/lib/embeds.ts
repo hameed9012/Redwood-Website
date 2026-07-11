@@ -75,3 +75,30 @@ export function rosterEmbed(members: Member[]): EmbedBuilder {
   }
   return e;
 }
+
+export function shiftSummaryEmbed(durationLabel: string, incidentCount: number, movements: string): EmbedBuilder {
+  return baseEmbed('success', 'Shifts')
+    .setTitle('Shift closed')
+    .setDescription('Your movements have been recorded.')
+    .addFields(
+      { name: 'Duration', value: durationLabel, inline: true },
+      { name: 'Incidents filed', value: String(incidentCount), inline: true },
+      { name: 'Movements', value: movements.slice(0, 1024) || '—' },
+    );
+}
+
+export function shiftStatusEmbed(onDuty: boolean, durationLabel?: string, incidentCount?: number): EmbedBuilder {
+  if (!onDuty) return baseEmbed('info', 'Shifts').setTitle('Off duty');
+  return baseEmbed('info', 'Shifts')
+    .setTitle('On duty')
+    .addFields(
+      { name: 'Elapsed', value: durationLabel ?? '—', inline: true },
+      { name: 'Incidents logged', value: String(incidentCount ?? 0), inline: true },
+    );
+}
+
+export function lockdownEmbed(on: boolean): EmbedBuilder {
+  return on
+    ? baseEmbed('warning', 'Security').setTitle('Site sealed').setDescription('The site is sealed. Unregistered personnel are denied.')
+    : baseEmbed('info', 'Security').setTitle('Site open').setDescription('The site is open.');
+}
