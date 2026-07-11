@@ -56,6 +56,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
   try {
+    // Acknowledge within Discord's 3s window; commands then use editReply.
+    // Slow work (roster redraws, lockdown editing every channel, Supabase round
+    // trips) otherwise expires the interaction token → 10062 Unknown interaction.
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     await command.execute(interaction);
   } catch (err) {
     console.error(err);
@@ -65,9 +69,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const text = isPerms
       ? "I couldn't apply that — my role must sit ABOVE the rank/division/position roles, I need Manage Roles + Manage Nicknames, and I can't modify the server owner."
       : 'Something went wrong. It has been noted.';
-    const msg = { content: line('err', text), flags: MessageFlags.Ephemeral } as const;
-    if (interaction.replied || interaction.deferred) await interaction.followUp(msg).catch(() => {});
-    else await interaction.reply(msg).catch(() => {});
+    if (interaction.deferred || interaction.replied) {
+      await interaction.editReply({ content: line('err', text) }).catch(() => {});
+    } else {
+      await interaction.reply({ content: line('err', text), flags: MessageFlags.Ephemeral }).catch(() => {});
+    }
   }
 });
 

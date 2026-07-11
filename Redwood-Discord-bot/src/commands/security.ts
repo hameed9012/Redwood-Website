@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, MessageFlags } from 'discord.js';
+import { SlashCommandBuilder } from 'discord.js';
 import type { Command } from './types';
 import { line } from '../lib/voice';
 import { config } from '../lib/config';
@@ -18,7 +18,7 @@ const lockdown: Command = {
       }
     }
     await setLockdown(interaction.guild!.id, on);
-    await interaction.reply({ content: line('ok', on ? 'The site is sealed. Unregistered personnel are denied.' : 'The site is open.') });
+    await interaction.editReply({ content: line('ok', on ? 'The site is sealed. Unregistered personnel are denied.' : 'The site is open.') });
   },
 };
 
@@ -30,7 +30,7 @@ const deadman: Command = {
     const cfg = config();
     const deadline = new Date(Date.now() + cfg.deadmanIntervalHours * 3_600_000).toISOString();
     await setDeadmanDeadline(interaction.guild!.id, deadline);
-    await interaction.reply({ content: line('ok', `Acknowledged. The switch is reset for ${cfg.deadmanIntervalHours}h.`), flags: MessageFlags.Ephemeral });
+    await interaction.editReply({ content: line('ok', `Acknowledged. The switch is reset for ${cfg.deadmanIntervalHours}h.`) });
   },
 };
 

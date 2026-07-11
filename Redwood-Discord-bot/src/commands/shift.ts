@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, MessageFlags, type ChatInputCommandInteraction } from 'discord.js';
+import { SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
 import type { Command } from './types';
 import { line } from '../lib/voice';
 import { getMember } from '../db/members';
@@ -8,7 +8,6 @@ import { addIncident, addParty, latestIncidentForShift, countIncidents } from '.
 import { addReport } from '../db/reports';
 import { shiftDurationMinutes, formatDuration, validateParty, type PartyInput } from '../lib/shiftMath';
 
-const EPH = { flags: MessageFlags.Ephemeral } as const;
 const ROLES = ['civilian', 'officer', 'witness', 'other'] as const;
 
 const shift: Command = {
@@ -52,7 +51,7 @@ const shift: Command = {
 async function requireRoster(interaction: ChatInputCommandInteraction) {
   const m = await getMember(interaction.user.id);
   if (!m || m.status !== 'active') {
-    await interaction.reply({ content: line('deny', 'You are not on the active roster.'), ...EPH });
+    await interaction.editReply({ content: line('deny', 'You are not on the active roster.') });
     return null;
   }
   return m;
@@ -62,11 +61,11 @@ async function start(interaction: ChatInputCommandInteraction) {
   const m = await requireRoster(interaction);
   if (!m) return;
   if (await getOpenShift(m.discordId)) {
-    return void interaction.reply({ content: line('deny', 'You already have an open shift. `/shift end` first.'), ...EPH });
+    return void interaction.editReply({ content: line('deny', 'You already have an open shift. `/shift end` first.') });
   }
   const id = await getActiveIdentity(m.discordId);
   await startShift(m.discordId, id?.id ?? null);
-  await interaction.reply({ content: line('ok', 'On duty. Your movements are being recorded.'), ...EPH });
+  await interaction.editReply({ content: line('ok', 'On duty. Your movements are being recorded.') });
 }
 
 function readParty(interaction: ChatInputCommandInteraction): PartyInput {
@@ -84,42 +83,41 @@ async function logIncident(interaction: ChatInputCommandInteraction) {
   const m = await requireRoster(interaction);
   if (!m) return;
   const shiftRow = await getOpenShift(m.discordId);
-  if (!shiftRow) return void interaction.reply({ content: line('deny', 'You are off duty. `/shift start` first.'), ...EPH });
+  if (!shiftRow) return void interaction.editReply({ content: line('deny', 'You are off duty. `/shift start` first.') });
   const summary = interaction.options.getString('summary', true);
   const location = interaction.options.getString('location', true);
   const incident = await addIncident(shiftRow.id, m.discordId, summary, location);
   const p = readParty(interaction);
   const hasParty = [p.name, p.coverName, p.plate, p.badge].some((v) => v);
   if (hasParty) await addParty(incident.id, p);
-  await interaction.reply({ content: line('ok', 'Logged. It is written down.'), ...EPH });
+  await interaction.editReply({ content: line('ok', 'Logged. It is written down.') });
 }
 
 async function party(interaction: ChatInputCommandInteraction) {
   const m = await requireRoster(interaction);
   if (!m) return;
   const shiftRow = await getOpenShift(m.discordId);
-  if (!shiftRow) return void interaction.reply({ content: line('deny', 'You are off duty. `/shift start` first.'), ...EPH });
+  if (!shiftRow) return void interaction.editReply({ content: line('deny', 'You are off duty. `/shift start` first.') });
   const incident = await latestIncidentForShift(shiftRow.id);
-  if (!incident) return void interaction.reply({ content: line('deny', 'No incident yet this shift. `/shift log` first.'), ...EPH });
+  if (!incident) return void interaction.editReply({ content: line('deny', 'No incident yet this shift. `/shift log` first.') });
   const p = readParty(interaction);
   const err = validateParty(p);
-  if (err) return void interaction.reply({ content: line('err', err), ...EPH });
+  if (err) return void interaction.editReply({ content: line('err', err) });
   await addParty(incident.id, p);
-  await interaction.reply({ content: line('ok', 'Added to the record.'), ...EPH });
+  await interaction.editReply({ content: line('ok', 'Added to the record.') });
 }
 
 async function end(interaction: ChatInputCommandInteraction) {
   const m = await requireRoster(interaction);
   if (!m) return;
   const shiftRow = await getOpenShift(m.discordId);
-  if (!shiftRow) return void interaction.reply({ content: line('deny', 'You are already off duty.'), ...EPH });
+  if (!shiftRow) return void interaction.editReply({ content: line('deny', 'You are already off duty.') });
   const movements = interaction.options.getString('movements', true);
   await closeShift(shiftRow.id, movements);
   const mins = shiftDurationMinutes(shiftRow.startedAt, new Date().toISOString());
   const n = await countIncidents(shiftRow.id);
-  await interaction.reply({
+  await interaction.editReply({
     content: line('ok', `Shift closed — ${formatDuration(mins)}, ${n} incident(s) filed. Your movements have been recorded.`),
-    ...EPH,
   });
 }
 
@@ -128,21 +126,21 @@ async function report(interaction: ChatInputCommandInteraction) {
   if (!m) return;
   // Attach to the open shift if any, else the most recent — we just need a shift id.
   const openShift = await getOpenShift(m.discordId);
-  if (!openShift) return void interaction.reply({ content: line('deny', 'File reports during an open shift. `/shift start` first.'), ...EPH });
+  if (!openShift) return void interaction.editReply({ content: line('deny', 'File reports during an open shift. `/shift start` first.') });
   const subject = interaction.options.getString('subject', true);
   const body = interaction.options.getString('body', true);
   await addReport(openShift.id, m.discordId, subject, body);
-  await interaction.reply({ content: line('ok', 'Dossier filed. It joins the record.'), ...EPH });
+  await interaction.editReply({ content: line('ok', 'Dossier filed. It joins the record.') });
 }
 
 async function status(interaction: ChatInputCommandInteraction) {
   const m = await requireRoster(interaction);
   if (!m) return;
   const shiftRow = await getOpenShift(m.discordId);
-  if (!shiftRow) return void interaction.reply({ content: line('ok', 'You are off duty.'), ...EPH });
+  if (!shiftRow) return void interaction.editReply({ content: line('ok', 'You are off duty.') });
   const mins = shiftDurationMinutes(shiftRow.startedAt, new Date().toISOString());
   const n = await countIncidents(shiftRow.id);
-  await interaction.reply({ content: line('ok', `On duty — ${formatDuration(mins)} elapsed, ${n} incident(s) logged.`), ...EPH });
+  await interaction.editReply({ content: line('ok', `On duty — ${formatDuration(mins)} elapsed, ${n} incident(s) logged.`) });
 }
 
 export const shiftCommands: Command[] = [shift];

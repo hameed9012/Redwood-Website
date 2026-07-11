@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, MessageFlags, type ChatInputCommandInteraction, type GuildMember } from 'discord.js';
+import { SlashCommandBuilder, type ChatInputCommandInteraction, type GuildMember } from 'discord.js';
 import type { Command } from './types';
 import { line } from '../lib/voice';
 import { RANKS, RANK_LABEL, isRank } from '../lib/ranks';
@@ -8,8 +8,6 @@ import { getMember } from '../db/members';
 import { getActiveIdentity, issueIdentity } from '../db/identities';
 import { generateIdentity } from '../lib/identityGen';
 import { applyRosterChange } from '../roster/apply';
-
-const EPH = { flags: MessageFlags.Ephemeral } as const;
 
 async function targetMember(interaction: ChatInputCommandInteraction): Promise<GuildMember | null> {
   const user = interaction.options.getUser('user', true);
@@ -43,40 +41,39 @@ const identity: Command = {
 
 async function create(interaction: ChatInputCommandInteraction) {
   const gm = await targetMember(interaction);
-  if (!gm) return void interaction.reply({ content: line('err', 'That member is not in the server.'), ...EPH });
+  if (!gm) return void interaction.editReply({ content: line('err', 'That member is not in the server.') });
   const existing = await getMember(gm.id);
   if (existing?.status === 'active') {
-    return void interaction.reply({ content: line('deny', 'Already on the roster. Use `/identity rotate` for new papers.'), ...EPH });
+    return void interaction.editReply({ content: line('deny', 'Already on the roster. Use `/identity rotate` for new papers.') });
   }
   const rank = interaction.options.getString('rank', true);
-  if (!isRank(rank)) return void interaction.reply({ content: line('err', 'Unknown rank.'), ...EPH });
+  if (!isRank(rank)) return void interaction.editReply({ content: line('err', 'Unknown rank.') });
   const employeeName = interaction.options.getString('name', true);
 
   const cover = generateIdentity();
   await applyRosterChange(interaction.guild!, gm, newMember(gm.id, employeeName, rank), interaction.user.id, 'identity_create', rank);
   await issueIdentity(gm.id, cover);
-  await interaction.reply({
+  await interaction.editReply({
     content: line('ok', `Onboarded **${employeeName}** as ${RANK_LABEL[rank]}. Cover issued under **${cover.legalName}**. Welcome to Redwood Peak.`),
-    ...EPH,
   });
 }
 
 async function rotate(interaction: ChatInputCommandInteraction) {
   const gm = await targetMember(interaction);
-  if (!gm) return void interaction.reply({ content: line('err', 'That member is not in the server.'), ...EPH });
+  if (!gm) return void interaction.editReply({ content: line('err', 'That member is not in the server.') });
   const m = await getMember(gm.id);
-  if (!m || m.status !== 'active') return void interaction.reply({ content: line('deny', 'That member is not on the roster.'), ...EPH });
+  if (!m || m.status !== 'active') return void interaction.editReply({ content: line('deny', 'That member is not on the roster.') });
   const cover = generateIdentity();
   await issueIdentity(gm.id, cover);
-  await interaction.reply({ content: line('ok', `New papers for **${m.employeeName}** — now **${cover.legalName}**. The old cover is retired.`), ...EPH });
+  await interaction.editReply({ content: line('ok', `New papers for **${m.employeeName}** — now **${cover.legalName}**. The old cover is retired.`) });
 }
 
 async function view(interaction: ChatInputCommandInteraction) {
   const user = interaction.options.getUser('user', true);
   const m = await getMember(user.id);
   const id = await getActiveIdentity(user.id);
-  if (!m || !id) return void interaction.reply({ content: line('err', 'No active identity on file for that member.'), ...EPH });
-  await interaction.reply({
+  if (!m || !id) return void interaction.editReply({ content: line('err', 'No active identity on file for that member.') });
+  await interaction.editReply({
     content: [
       '```',
       'REDWOOD PEAK — IDENTITY PACKET',
@@ -90,7 +87,6 @@ async function view(interaction: ChatInputCommandInteraction) {
       `Issued       : ${id.issuedAt.slice(0, 10)}`,
       '```',
     ].join('\n'),
-    ...EPH,
   });
 }
 
