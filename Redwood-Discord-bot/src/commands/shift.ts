@@ -7,6 +7,7 @@ import { getOpenShift, startShift, closeShift } from '../db/shifts';
 import { addIncident, addParty, latestIncidentForShift, countIncidents } from '../db/incidents';
 import { addReport } from '../db/reports';
 import { shiftDurationMinutes, formatDuration, validateParty, type PartyInput } from '../lib/shiftMath';
+import { shiftSummaryEmbed, shiftStatusEmbed } from '../lib/embeds';
 
 const ROLES = ['civilian', 'officer', 'witness', 'other'] as const;
 
@@ -116,9 +117,7 @@ async function end(interaction: ChatInputCommandInteraction) {
   await closeShift(shiftRow.id, movements);
   const mins = shiftDurationMinutes(shiftRow.startedAt, new Date().toISOString());
   const n = await countIncidents(shiftRow.id);
-  await interaction.editReply({
-    content: line('ok', `Shift closed — ${formatDuration(mins)}, ${n} incident(s) filed. Your movements have been recorded.`),
-  });
+  await interaction.editReply({ embeds: [shiftSummaryEmbed(formatDuration(mins), n, movements)] });
 }
 
 async function report(interaction: ChatInputCommandInteraction) {
@@ -137,10 +136,10 @@ async function status(interaction: ChatInputCommandInteraction) {
   const m = await requireRoster(interaction);
   if (!m) return;
   const shiftRow = await getOpenShift(m.discordId);
-  if (!shiftRow) return void interaction.editReply({ content: line('ok', 'You are off duty.') });
+  if (!shiftRow) return void interaction.editReply({ embeds: [shiftStatusEmbed(false)] });
   const mins = shiftDurationMinutes(shiftRow.startedAt, new Date().toISOString());
   const n = await countIncidents(shiftRow.id);
-  await interaction.editReply({ content: line('ok', `On duty — ${formatDuration(mins)} elapsed, ${n} incident(s) logged.`) });
+  await interaction.editReply({ embeds: [shiftStatusEmbed(true, formatDuration(mins), n)] });
 }
 
 export const shiftCommands: Command[] = [shift];
