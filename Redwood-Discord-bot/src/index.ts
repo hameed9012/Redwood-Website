@@ -59,7 +59,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await command.execute(interaction);
   } catch (err) {
     console.error(err);
-    const msg = { content: line('err', 'Something went wrong. It has been noted.'), flags: MessageFlags.Ephemeral } as const;
+    // 50013 = Missing Permissions — almost always role hierarchy or a missing
+    // Manage Roles/Nicknames permission (or trying to modify the server owner).
+    const isPerms = (err as { code?: number })?.code === 50013;
+    const text = isPerms
+      ? "I couldn't apply that — my role must sit ABOVE the rank/division/position roles, I need Manage Roles + Manage Nicknames, and I can't modify the server owner."
+      : 'Something went wrong. It has been noted.';
+    const msg = { content: line('err', text), flags: MessageFlags.Ephemeral } as const;
     if (interaction.replied || interaction.deferred) await interaction.followUp(msg).catch(() => {});
     else await interaction.reply(msg).catch(() => {});
   }
