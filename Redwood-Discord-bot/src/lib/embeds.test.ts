@@ -108,7 +108,7 @@ import type { LookupResult } from './lookup';
 
 describe('lookupEmbed', () => {
   it('member file: HC cover shows, redaction marker when cover is null', () => {
-    const hc: LookupResult = { kind: 'member-file', employeeName: 'Adam Marcuz', rank: 'employee', dismissed: false, cover: { legalName: 'David Whitaker', dob: '1994-03-12', ssn: '462-88-1174', idNumber: 'D48120394', bloodType: 'A-', nextOfKin: 'Karen Lopez — spouse' }, pastIdentities: [], incidents: [], registeredGear: [] };
+    const hc: LookupResult = { kind: 'member-file', employeeName: 'Adam Marcuz', rank: 'employee', dismissed: false, cover: { legalName: 'David Whitaker', dob: '1994-03-12', ssn: '462-88-1174', idNumber: 'D48120394', bloodType: 'A-', nextOfKin: 'Karen Lopez — spouse' }, pastIdentities: [], incidents: [], registeredGear: [], standing: { commendations: 0, writeups: 0, recent: [] } };
     expect(JSON.stringify(lookupEmbed(hc).toJSON())).toContain('462-88-1174');
     const nonHc: LookupResult = { ...hc, cover: null, pastIdentities: null };
     expect(JSON.stringify(lookupEmbed(nonHc).toJSON())).toContain('▓');
@@ -133,5 +133,18 @@ describe('registry embeds', () => {
   it('registrationEmbed renders the issued serial', () => {
     const j = registrationEmbed('firearm', 'RW-482910', 'Pistol', 'David Whitaker').toJSON();
     expect(j.title).toContain('RW-482910');
+  });
+});
+
+describe('standing in cards', () => {
+  it('whoisEmbed renders standing when provided', () => {
+    const m = { discordId: '1', employeeName: 'Adam Marcuz', rank: 'employee' as const, divisions: [], positions: [], status: 'active' as const, joinedAt: '2026-07-11T00:00:00Z', updatedAt: '2026-07-11T00:00:00Z' };
+    const j = whoisEmbed(m, { commendations: 2, writeups: 1, recent: ['✔ good'] }).toJSON();
+    expect(JSON.stringify(j)).toContain('2 commendation');
+  });
+
+  it('lookup member file shows standing', () => {
+    const r = { kind: 'member-file' as const, employeeName: 'Adam Marcuz', rank: 'employee' as const, dismissed: false, cover: null, pastIdentities: null, incidents: [], registeredGear: null, standing: { commendations: 3, writeups: 0, recent: [] } };
+    expect(JSON.stringify(lookupEmbed(r).toJSON())).toContain('3 commendation');
   });
 });

@@ -1,4 +1,5 @@
 import type { Rank } from './ranks';
+import { summarizeReputation, type ReputationLite, type Standing } from './reputation';
 
 export type Role = 'civilian' | 'officer' | 'witness' | 'other';
 
@@ -51,6 +52,7 @@ export interface LookupData {
   incidents: IncidentRow[];
   firearms: FirearmLite[];
   vehicles: VehicleLite[];
+  reputation: ReputationLite[];
 }
 
 export interface IncidentLine {
@@ -78,6 +80,7 @@ export type LookupResult =
       pastIdentities: string[] | null; // null = redacted (non-HC)
       incidents: IncidentLine[];
       registeredGear: string[] | null; // null = redacted (non-HC)
+      standing: Standing;
     }
   | { kind: 'outsider-dossier'; label: string; role: Role; incidents: IncidentLine[]; alsoSeen: string[]; notOnFile: boolean }
   | { kind: 'registration'; itemType: 'firearm' | 'vehicle'; label: string; detail: string; status: 'clean' | 'flagged'; flagNote: string | null; issued: string; owner: string | null }
@@ -127,6 +130,7 @@ function memberFile(member: MemberLite, data: LookupData, viewerIsHC: boolean): 
       ...data.firearms.filter((f) => f.discordId === member.discordId).map((f) => `${f.serial} — ${f.kind}${f.status === 'flagged' ? ' (flagged)' : ''}`),
       ...data.vehicles.filter((v) => v.discordId === member.discordId).map((v) => `${v.plate} — ${v.description}${v.status === 'flagged' ? ' (flagged)' : ''}`),
     ] : null,
+    standing: summarizeReputation(data.reputation.filter((r) => r.discordId === member.discordId)),
   };
 }
 

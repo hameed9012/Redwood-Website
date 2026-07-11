@@ -4,6 +4,7 @@ import type { Identity } from './identity';
 import { RANKS, RANK_LABEL, DIVISION_LABEL, POSITION_LABEL, type Rank } from './ranks';
 import { HANDBOOK_URL } from './voice';
 import type { LookupResult, IncidentLine } from './lookup';
+import type { Standing } from './reputation';
 
 export type Tone = 'info' | 'success' | 'warning' | 'denied';
 
@@ -39,7 +40,12 @@ export function identityEmbed(member: Member, identity: Identity, title: string,
     );
 }
 
-export function whoisEmbed(member: Member): EmbedBuilder {
+function standingValue(s: Standing): string {
+  const head = `✔ ${s.commendations} commendation${s.commendations === 1 ? '' : 's'} · ⚠ ${s.writeups} write-up${s.writeups === 1 ? '' : 's'}`;
+  return s.recent.length ? `${head}\n${s.recent.join('\n')}` : head;
+}
+
+export function whoisEmbed(member: Member, standing?: Standing): EmbedBuilder {
   const dismissed = member.status === 'dismissed';
   const divs = member.divisions.map((d) => DIVISION_LABEL[d]).join(', ') || '—';
   const pos = member.positions.map((p) => POSITION_LABEL[p]).join(', ') || '—';
@@ -51,6 +57,7 @@ export function whoisEmbed(member: Member): EmbedBuilder {
       { name: 'Positions', value: pos, inline: true },
       { name: 'Hired', value: member.joinedAt.slice(0, 10), inline: true },
       { name: 'Status', value: dismissed ? 'Dismissed' : 'Active', inline: true },
+      ...(standing ? [{ name: 'Standing', value: standingValue(standing) }] : []),
     );
 }
 
@@ -167,6 +174,7 @@ export function lookupEmbed(result: LookupResult): EmbedBuilder {
       { name: 'SSN', value: result.cover ? `\`${result.cover.ssn}\`` : REDACTED, inline: true },
       { name: 'Past identities', value: result.pastIdentities === null ? REDACTED : (result.pastIdentities.length ? result.pastIdentities.join(', ') : '—') },
       { name: 'Registered gear', value: result.registeredGear === null ? REDACTED : (result.registeredGear.length ? result.registeredGear.join('\n') : '—') },
+      { name: 'Standing', value: standingValue(result.standing) },
       { name: 'Incidents', value: incidentsValue(result.incidents) },
     );
   return e;

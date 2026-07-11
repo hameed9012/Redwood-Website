@@ -2,6 +2,7 @@ import { db } from '../lib/supabase';
 import type { Query, LookupData, MemberLite, IdentityLite, PartyRow, IncidentRow, Role } from '../lib/lookup';
 import type { Rank } from '../lib/ranks';
 import { registryMatches, firearmsForMember, vehiclesForMember } from './registry';
+import { reputationForActiveMembers } from './reputation';
 
 interface MemberRow { discord_id: string; employee_name: string; rank: Rank; status: 'active' | 'dismissed'; }
 interface IdentRow { discord_id: string; legal_name: string; dob: string; ssn: string; id_number: string; blood_type: string; next_of_kin: string; status: 'active' | 'retired'; issued_at: string; }
@@ -53,8 +54,8 @@ export async function gatherLookup(query: Query): Promise<LookupData> {
       incRows = [...incRows, ...(await incidentsByIds([...new Set(parties.map((p) => p.incidentId))]))];
     }
     const incById = new Map(incRows.map((r) => [r.id, r]));
-    const [firearms, vehicles] = await Promise.all([firearmsForMember(query.discordId), vehiclesForMember(query.discordId)]);
-    return { members, identities, parties, incidents: await resolveIncidents([...incById.values()]), firearms, vehicles };
+    const [firearms, vehicles, reputation] = await Promise.all([firearmsForMember(query.discordId), vehiclesForMember(query.discordId), reputationForActiveMembers([query.discordId])]);
+    return { members, identities, parties, incidents: await resolveIncidents([...incById.values()]), firearms, vehicles, reputation };
   }
 
   // text query
@@ -94,5 +95,6 @@ export async function gatherLookup(query: Query): Promise<LookupData> {
   for (const r of [...partyIncidents, ...((loggedData ?? []) as IncRow[])]) incById.set(r.id, r);
 
   const registry = await registryMatches(t);
-  return { members, identities, parties, incidents: await resolveIncidents([...incById.values()]), firearms: registry.firearms, vehicles: registry.vehicles };
+  const reputation = await reputationForActiveMembers(members.map((m) => m.discordId));
+  return { members, identities, parties, incidents: await resolveIncidents([...incById.values()]), firearms: registry.firearms, vehicles: registry.vehicles, reputation };
 }

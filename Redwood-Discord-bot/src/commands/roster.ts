@@ -5,6 +5,8 @@ import { RANKS, DIVISIONS, POSITIONS, RANK_LABEL, DIVISION_LABEL, POSITION_LABEL
 import { getMember } from '../db/members';
 import { applyRosterChange } from '../roster/apply';
 import { whoisEmbed } from '../lib/embeds';
+import { reputationForActiveMember } from '../db/reputation';
+import { summarizeReputation } from '../lib/reputation';
 
 async function targetMember(interaction: ChatInputCommandInteraction): Promise<GuildMember | null> {
   const user = interaction.options.getUser('user', true);
@@ -124,7 +126,8 @@ const whois: Command = {
     const user = interaction.options.getUser('user', true);
     const m = await getMember(user.id);
     if (!m) return void interaction.editReply({ content: line('err', 'No file on that member.') });
-    await interaction.editReply({ embeds: [whoisEmbed(m)] });
+    const standing = summarizeReputation(await reputationForActiveMember(m.discordId));
+    await interaction.editReply({ embeds: [whoisEmbed(m, standing)] });
   },
 };
 
