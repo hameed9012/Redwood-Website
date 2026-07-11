@@ -3,6 +3,7 @@ import type { Member } from './member';
 import type { Identity } from './identity';
 import { RANKS, RANK_LABEL, DIVISION_LABEL, POSITION_LABEL, type Rank } from './ranks';
 import { HANDBOOK_URL } from './voice';
+import type { LookupResult, IncidentLine } from './lookup';
 
 export type Tone = 'info' | 'success' | 'warning' | 'denied';
 
@@ -120,4 +121,42 @@ export function helpComponents(): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('The full handbook →').setURL(HANDBOOK_URL),
   );
+}
+
+const REDACTED = '▓▓▓▓';
+
+function incidentsValue(lines: IncidentLine[]): string {
+  if (lines.length === 0) return 'None on record.';
+  return lines.slice(0, 10).map((l) => `• ${l.summary} — ${l.location} (${l.date}, logged by ${l.loggedBy})`).join('\n').slice(0, 1024);
+}
+
+export function lookupEmbed(result: LookupResult): EmbedBuilder {
+  if (result.kind === 'not-found') {
+    return baseEmbed('denied', 'Records').setTitle('No record').setDescription('Nothing on file matches that.');
+  }
+  if (result.kind === 'disambiguation') {
+    return baseEmbed('warning', 'Records')
+      .setTitle('Several matches')
+      .setDescription('Be more specific:')
+      .addFields({ name: 'Matches', value: result.matches.map((m) => `• ${m.label} (${m.kind})`).join('\n') });
+  }
+  if (result.kind === 'outsider-dossier') {
+    return baseEmbed('info', 'Records')
+      .setTitle(`Outsider · ${result.label}`)
+      .setDescription(`Role: ${result.role}`)
+      .addFields(
+        { name: 'Appearances', value: incidentsValue(result.incidents) },
+        { name: 'Also seen with', value: result.alsoSeen.length ? result.alsoSeen.slice(0, 20).join(', ') : '—' },
+      );
+  }
+  const e = baseEmbed('info', 'Personnel')
+    .setTitle(`${result.employeeName}${result.dismissed ? ' (dismissed)' : ''}`)
+    .setDescription(RANK_LABEL[result.rank])
+    .addFields(
+      { name: 'Legal name (cover)', value: result.cover ? result.cover.legalName : REDACTED, inline: true },
+      { name: 'SSN', value: result.cover ? `\`${result.cover.ssn}\`` : REDACTED, inline: true },
+      { name: 'Past identities', value: result.pastIdentities === null ? REDACTED : (result.pastIdentities.length ? result.pastIdentities.join(', ') : '—') },
+      { name: 'Incidents', value: incidentsValue(result.incidents) },
+    );
+  return e;
 }
