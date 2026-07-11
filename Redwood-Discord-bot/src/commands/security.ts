@@ -3,6 +3,7 @@ import type { Command } from './types';
 import { line } from '../lib/voice';
 import { config } from '../lib/config';
 import { setLockdown, setDeadmanDeadline } from '../db/config';
+import { lockdownEmbed } from '../lib/embeds';
 
 const lockdown: Command = {
   highCommandOnly: true,
@@ -18,7 +19,7 @@ const lockdown: Command = {
       }
     }
     await setLockdown(interaction.guild!.id, on);
-    await interaction.editReply({ content: line('ok', on ? 'The site is sealed. Unregistered personnel are denied.' : 'The site is open.') });
+    await interaction.editReply({ embeds: [lockdownEmbed(on)] });
   },
 };
 
