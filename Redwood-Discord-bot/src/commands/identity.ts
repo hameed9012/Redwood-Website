@@ -6,7 +6,7 @@ import type { Rank } from '../lib/ranks';
 import type { Member } from '../lib/member';
 import { getMember } from '../db/members';
 import { getActiveIdentity, issueIdentity } from '../db/identities';
-import { generateIdentity } from '../lib/identityGen';
+import { generateIdentity, guessGender } from '../lib/identityGen';
 import { applyRosterChange } from '../roster/apply';
 
 async function targetMember(interaction: ChatInputCommandInteraction): Promise<GuildMember | null> {
@@ -50,7 +50,7 @@ async function create(interaction: ChatInputCommandInteraction) {
   if (!isRank(rank)) return void interaction.editReply({ content: line('err', 'Unknown rank.') });
   const employeeName = interaction.options.getString('name', true);
 
-  const cover = generateIdentity();
+  const cover = generateIdentity(guessGender(employeeName));
   await applyRosterChange(interaction.guild!, gm, newMember(gm.id, employeeName, rank), interaction.user.id, 'identity_create', rank);
   await issueIdentity(gm.id, cover);
   await interaction.editReply({
@@ -63,7 +63,7 @@ async function rotate(interaction: ChatInputCommandInteraction) {
   if (!gm) return void interaction.editReply({ content: line('err', 'That member is not in the server.') });
   const m = await getMember(gm.id);
   if (!m || m.status !== 'active') return void interaction.editReply({ content: line('deny', 'That member is not on the roster.') });
-  const cover = generateIdentity();
+  const cover = generateIdentity(guessGender(m.employeeName));
   await issueIdentity(gm.id, cover);
   await interaction.editReply({ content: line('ok', `New papers for **${m.employeeName}** — now **${cover.legalName}**. The old cover is retired.`) });
 }
