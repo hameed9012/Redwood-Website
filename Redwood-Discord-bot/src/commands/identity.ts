@@ -34,9 +34,9 @@ const identity: Command = {
       .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))) as SlashCommandBuilder,
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
-    if (sub === 'create') return void create(interaction);
-    if (sub === 'rotate') return void rotate(interaction);
-    return void view(interaction);
+    if (sub === 'create') return create(interaction);
+    if (sub === 'rotate') return rotate(interaction);
+    return view(interaction);
   },
 };
 

@@ -40,12 +40,12 @@ const shift: Command = {
     .addSubcommand((s) => s.setName('status').setDescription('Your current duty status.')) as SlashCommandBuilder,
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
-    if (sub === 'start') return void start(interaction);
-    if (sub === 'log') return void logIncident(interaction);
-    if (sub === 'party') return void party(interaction);
-    if (sub === 'end') return void end(interaction);
-    if (sub === 'report') return void report(interaction);
-    return void status(interaction);
+    if (sub === 'start') return start(interaction);
+    if (sub === 'log') return logIncident(interaction);
+    if (sub === 'party') return party(interaction);
+    if (sub === 'end') return end(interaction);
+    if (sub === 'report') return report(interaction);
+    return status(interaction);
   },
 };
 
