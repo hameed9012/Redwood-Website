@@ -84,3 +84,21 @@ describe('shift + lockdown cards', () => {
     expect(lockdownEmbed(false).toJSON().color).toBe(TONE_COLOR.info);
   });
 });
+
+import { helpEmbed, helpComponents } from './embeds';
+
+describe('help', () => {
+  it('lists the command categories', () => {
+    const names = (helpEmbed().toJSON().fields ?? []).map((f) => f.name);
+    expect(names.some((n) => n.includes('Identity'))).toBe(true);
+    expect(names.some((n) => n.includes('Shifts'))).toBe(true);
+    expect(names.some((n) => n.includes('Security'))).toBe(true);
+  });
+
+  it('has a single link button to the handbook', () => {
+    const row = helpComponents().toJSON();
+    expect(row.components).toHaveLength(1);
+    expect((row.components[0] as { style: number }).style).toBe(5); // ButtonStyle.Link
+    expect((row.components[0] as { url?: string }).url).toContain('docs.google.com');
+  });
+});

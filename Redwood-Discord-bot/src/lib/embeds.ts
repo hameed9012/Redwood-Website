@@ -102,3 +102,22 @@ export function lockdownEmbed(on: boolean): EmbedBuilder {
     ? baseEmbed('warning', 'Security').setTitle('Site sealed').setDescription('The site is sealed. Unregistered personnel are denied.')
     : baseEmbed('info', 'Security').setTitle('Site open').setDescription('The site is open.');
 }
+
+export function helpEmbed(): EmbedBuilder {
+  return baseEmbed('info', 'Field Manual')
+    .setTitle('Redwood Peak — Field Manual')
+    .setDescription('Everything you can do here. 🔒 marks High-Command-only.')
+    .addFields(
+      { name: '🔒 Identity', value: '`/identity create` — onboard someone and issue their cover\n`/identity rotate` — issue fresh papers\n`/identity view` — pull a member’s packet' },
+      { name: 'Shifts', value: '`/shift start` — clock on\n`/shift log` — record an incident\n`/shift party` — add people to that incident\n`/shift end` — close out and account for your movements\n`/shift report` — file a witness dossier\n`/shift status` — your current duty state' },
+      { name: '🔒 Roster', value: '`/promote` · `/demote` · `/setrank` · `/division` · `/position` · `/dismiss` · `/whois` · `/roster-setup` · `/sync-roles`' },
+      { name: '🔒 Security', value: '`/lockdown` — seal or open the site\n`/deadman` — reset the dead-man’s switch' },
+      { name: 'General', value: '`/help` — this guide\n`/say` 🔒 — speak as the company' },
+    );
+}
+
+export function helpComponents(): ActionRowBuilder<ButtonBuilder> {
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('The full handbook →').setURL(HANDBOOK_URL),
+  );
+}
