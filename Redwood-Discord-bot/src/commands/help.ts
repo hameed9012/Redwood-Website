@@ -1,13 +1,11 @@
 import { SlashCommandBuilder } from 'discord.js';
 import type { Command } from './types';
-import { line, HANDBOOK_URL } from '../lib/voice';
+import { helpEmbed, helpComponents } from '../lib/embeds';
 
 export const help: Command = {
-  data: new SlashCommandBuilder().setName('help').setDescription('The Redwood Peak employee handbook.'),
+  data: new SlashCommandBuilder().setName('help').setDescription('What you can do here, and how.'),
   highCommandOnly: false,
   async execute(interaction) {
-    await interaction.editReply({
-      content: line('ok', `The employee handbook: ${HANDBOOK_URL}`),
-    });
+    await interaction.editReply({ embeds: [helpEmbed()], components: [helpComponents()] });
   },
 };
