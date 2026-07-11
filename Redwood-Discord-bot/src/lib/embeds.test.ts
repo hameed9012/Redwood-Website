@@ -148,3 +148,12 @@ describe('standing in cards', () => {
     expect(JSON.stringify(lookupEmbed(r).toJSON())).toContain('3 commendation');
   });
 });
+
+import { carouselListEmbed } from './embeds';
+
+describe('carouselListEmbed', () => {
+  it('lists titles, or says empty', () => {
+    expect(JSON.stringify(carouselListEmbed([{ id: '1', title: 'Cleanup', body: 'x', imageUrl: 'u', sortOrder: 1 }]).toJSON())).toContain('Cleanup');
+    expect(carouselListEmbed([]).toJSON().description).toContain('No slides');
+  });
+});

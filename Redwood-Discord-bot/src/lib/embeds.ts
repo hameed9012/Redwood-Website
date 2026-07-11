@@ -5,6 +5,7 @@ import { RANKS, RANK_LABEL, DIVISION_LABEL, POSITION_LABEL, type Rank } from './
 import { HANDBOOK_URL } from './voice';
 import type { LookupResult, IncidentLine } from './lookup';
 import type { Standing } from './reputation';
+import type { CarouselSlide } from '../db/carousel';
 
 export type Tone = 'info' | 'success' | 'warning' | 'denied';
 
@@ -187,4 +188,10 @@ export function registrationEmbed(itemType: 'firearm' | 'vehicle', label: string
       { name: itemType === 'firearm' ? 'Firearm' : 'Vehicle', value: detail, inline: true },
       { name: 'Registered to', value: ownerCover, inline: true },
     );
+}
+
+export function carouselListEmbed(slides: CarouselSlide[]): EmbedBuilder {
+  const e = baseEmbed('info', 'Media').setTitle('Carousel slides');
+  if (slides.length === 0) return e.setDescription('No slides — the site is showing the built-in ones.');
+  return e.setDescription(slides.map((s, i) => `**${i + 1}. ${s.title}** — ${s.body.slice(0, 80)}`).join('\n'));
 }

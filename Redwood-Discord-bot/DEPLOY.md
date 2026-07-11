@@ -56,3 +56,9 @@ journalctl -u redwood-bot -f      # watch logs
    - `SUPABASE_URL` — your project URL
    - `SUPABASE_SERVICE_KEY` — the service_role key
 2. Redeploy. The Personnel, Operations Log, and Witness Dossiers portal cards now open real pages that read live data.
+
+## v1.5 (media carousel)
+
+1. Supabase: run `db/schema-v1.5.sql`, and create a **public** Storage bucket named `carousel` (Storage → New bucket → Public).
+2. Bot: `git pull && npm run build && pm2 restart redwood-bot` (no new env).
+3. Website: redeploy (no new env). The homepage carousel now reads slides from Supabase, falling back to the built-in slides until you `/carousel add` any.

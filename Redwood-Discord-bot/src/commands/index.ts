@@ -9,7 +9,8 @@ import { shiftCommands } from './shift';
 import { lookupCommands } from './lookup';
 import { registryCommands } from './registry';
 import { reputationCommands } from './reputation';
+import { carouselCommands } from './carousel';
 
-export const commands: Command[] = [help, ...rosterCommands, ...rosterAdminCommands, ...securityCommands, ...speechCommands, ...identityCommands, ...shiftCommands, ...lookupCommands, ...registryCommands, ...reputationCommands];
+export const commands: Command[] = [help, ...rosterCommands, ...rosterAdminCommands, ...securityCommands, ...speechCommands, ...identityCommands, ...shiftCommands, ...lookupCommands, ...registryCommands, ...reputationCommands, ...carouselCommands];
 
 export const commandMap = new Map(commands.map((c) => [c.data.name, c]));
