@@ -6,6 +6,7 @@ import type { Rank } from '../lib/ranks';
 import type { Member } from '../lib/member';
 import { getMember } from '../db/members';
 import { getActiveIdentity, issueIdentity } from '../db/identities';
+import { burnActiveIdentity } from '../db/reputation';
 import { generateIdentity, guessGender } from '../lib/identityGen';
 import { applyRosterChange } from '../roster/apply';
 import { identityEmbed } from '../lib/embeds';
@@ -31,11 +32,15 @@ const identity: Command = {
     .addSubcommand((s) => s.setName('rotate').setDescription('Issue a member fresh papers (keeps their name).')
       .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true)))
     .addSubcommand((s) => s.setName('view').setDescription("Show a member's current identity packet.")
-      .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))) as SlashCommandBuilder,
+      .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true)))
+    .addSubcommand((s) => s.setName('burn').setDescription("Burn a member's cover and issue fresh papers.")
+      .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
+      .addStringOption((o) => o.setName('reason').setDescription('Why it is compromised').setRequired(true))) as SlashCommandBuilder,
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
     if (sub === 'create') return create(interaction);
     if (sub === 'rotate') return rotate(interaction);
+    if (sub === 'burn') return burn(interaction);
     return view(interaction);
   },
 };
@@ -74,6 +79,17 @@ async function view(interaction: ChatInputCommandInteraction) {
   const id = await getActiveIdentity(user.id);
   if (!m || !id) return void interaction.editReply({ content: line('err', 'No active identity on file for that member.') });
   await interaction.editReply({ embeds: [identityEmbed(m, id, 'Identity packet')] });
+}
+
+async function burn(interaction: ChatInputCommandInteraction) {
+  const gm = await targetMember(interaction);
+  if (!gm) return void interaction.editReply({ content: line('err', 'That member is not in the server.') });
+  const m = await getMember(gm.id);
+  if (!m || m.status !== 'active') return void interaction.editReply({ content: line('deny', 'That member is not on the roster.') });
+  await burnActiveIdentity(gm.id);
+  const cover = generateIdentity(guessGender(m.employeeName));
+  const issued = await issueIdentity(gm.id, cover);
+  await interaction.editReply({ embeds: [identityEmbed(m, issued, 'Cover burned — new papers filed', 'success')] });
 }
 
 export const identityCommands: Command[] = [identity];
