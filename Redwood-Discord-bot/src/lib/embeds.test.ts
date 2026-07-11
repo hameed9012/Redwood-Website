@@ -31,3 +31,33 @@ describe('identityEmbed', () => {
     expect(identityEmbed(member, identity, 'Identity issued', 'success').toJSON().color).toBe(TONE_COLOR.success);
   });
 });
+
+import { whoisEmbed, rosterEmbed } from './embeds';
+
+describe('whoisEmbed', () => {
+  it('active member is info, has rank/divisions/positions fields', () => {
+    const j = whoisEmbed(member).toJSON();
+    expect(j.color).toBe(TONE_COLOR.info);
+    expect(j.title).toBe('Adam Marcuz');
+    const names = (j.fields ?? []).map((f) => f.name);
+    expect(names).toEqual(expect.arrayContaining(['Rank', 'Divisions', 'Positions', 'Hired', 'Status']));
+  });
+
+  it('dismissed member is denied tone and marked', () => {
+    const j = whoisEmbed({ ...member, status: 'dismissed' }).toJSON();
+    expect(j.color).toBe(TONE_COLOR.denied);
+    expect(j.title).toContain('dismissed');
+  });
+});
+
+describe('rosterEmbed', () => {
+  it('one field per rank, high-command first, empty ranks show a dash', () => {
+    const hc: Member = { ...member, employeeName: 'Cara Vance', rank: 'high-command' };
+    const j = rosterEmbed([member, hc]).toJSON();
+    const names = (j.fields ?? []).map((f) => f.name);
+    expect(names[0]).toBe('High Command');
+    expect(names).toEqual(['High Command', 'Supervisor', 'Employee', 'Trainee']);
+    expect((j.fields ?? []).find((f) => f.name === 'Supervisor')!.value).toBe('—');
+    expect((j.fields ?? []).find((f) => f.name === 'Employee')!.value).toContain('Adam Marcuz');
+  });
+});

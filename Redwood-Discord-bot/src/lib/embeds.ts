@@ -37,3 +37,41 @@ export function identityEmbed(member: Member, identity: Identity, title: string,
       { name: 'Issued', value: identity.issuedAt.slice(0, 10), inline: true },
     );
 }
+
+export function whoisEmbed(member: Member): EmbedBuilder {
+  const dismissed = member.status === 'dismissed';
+  const divs = member.divisions.map((d) => DIVISION_LABEL[d]).join(', ') || '—';
+  const pos = member.positions.map((p) => POSITION_LABEL[p]).join(', ') || '—';
+  return baseEmbed(dismissed ? 'denied' : 'info', 'Personnel')
+    .setTitle(`${member.employeeName}${dismissed ? ' (dismissed)' : ''}`)
+    .addFields(
+      { name: 'Rank', value: RANK_LABEL[member.rank], inline: true },
+      { name: 'Divisions', value: divs, inline: true },
+      { name: 'Positions', value: pos, inline: true },
+      { name: 'Hired', value: member.joinedAt.slice(0, 10), inline: true },
+      { name: 'Status', value: dismissed ? 'Dismissed' : 'Active', inline: true },
+    );
+}
+
+export function rosterEmbed(members: Member[]): EmbedBuilder {
+  const active = members.filter((m) => m.status === 'active');
+  const ranksTopDown: Rank[] = [...RANKS].reverse();
+  const e = baseEmbed('info', 'Roster').setTitle('Redwood Peak · Roster');
+  for (const rank of ranksTopDown) {
+    const inRank = active
+      .filter((m) => m.rank === rank)
+      .sort((a, b) => a.employeeName.localeCompare(b.employeeName));
+    const value = inRank.length
+      ? inRank.map((m) => {
+          const divs = m.divisions.map((d) => DIVISION_LABEL[d]);
+          const pos = m.positions.map((p) => POSITION_LABEL[p]);
+          let l = m.employeeName;
+          if (divs.length) l += ` — ${divs.join(', ')}`;
+          if (pos.length) l += ` [${pos.join(', ')}]`;
+          return l;
+        }).join('\n').slice(0, 1024)
+      : '—';
+    e.addFields({ name: RANK_LABEL[rank], value });
+  }
+  return e;
+}
