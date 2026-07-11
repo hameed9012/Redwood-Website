@@ -157,3 +157,13 @@ describe('carouselListEmbed', () => {
     expect(carouselListEmbed([]).toJSON().description).toContain('No slides');
   });
 });
+
+import { ledgerEmbed } from './embeds';
+
+describe('ledgerEmbed', () => {
+  it('shows white and black balances', () => {
+    const j = ledgerEmbed({ white: { inflow: 1000, outflow: 250, balance: 750 }, black: { inflow: 500, outflow: 0, balance: 500 } }, []).toJSON();
+    expect(JSON.stringify(j)).toContain('$750');
+    expect(JSON.stringify(j)).toContain('$500');
+  });
+});

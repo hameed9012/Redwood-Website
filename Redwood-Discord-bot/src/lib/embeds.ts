@@ -6,6 +6,7 @@ import { HANDBOOK_URL } from './voice';
 import type { LookupResult, IncidentLine } from './lookup';
 import type { Standing } from './reputation';
 import type { CarouselSlide } from '../db/carousel';
+import { formatMoney, type LedgerEntry, type BookBalance } from './ledger';
 
 export type Tone = 'info' | 'success' | 'warning' | 'denied';
 
@@ -194,4 +195,18 @@ export function carouselListEmbed(slides: CarouselSlide[]): EmbedBuilder {
   const e = baseEmbed('info', 'Media').setTitle('Carousel slides');
   if (slides.length === 0) return e.setDescription('No slides — the site is showing the built-in ones.');
   return e.setDescription(slides.map((s, i) => `**${i + 1}. ${s.title}** — ${s.body.slice(0, 80)}`).join('\n'));
+}
+
+export function ledgerEmbed(balances: { white: BookBalance; black: BookBalance }, recent: LedgerEntry[]): EmbedBuilder {
+  const bookLine = (b: BookBalance) => `Balance ${formatMoney(b.balance)}\nIn ${formatMoney(b.inflow)} · Out ${formatMoney(b.outflow)}`;
+  const e = baseEmbed('info', 'Ledger')
+    .setTitle('The books')
+    .addFields(
+      { name: 'White (clean)', value: bookLine(balances.white), inline: true },
+      { name: 'Black (off the books)', value: bookLine(balances.black), inline: true },
+    );
+  if (recent.length) {
+    e.addFields({ name: 'Recent', value: recent.slice(0, 8).map((r) => `${r.direction === 'inflow' ? '+' : '−'}${formatMoney(r.amount)} ${r.book} — ${r.reason}`).join('\n').slice(0, 1024) });
+  }
+  return e;
 }
