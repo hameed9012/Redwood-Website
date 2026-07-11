@@ -7,7 +7,8 @@ import { speechCommands } from './say';
 import { identityCommands } from './identity';
 import { shiftCommands } from './shift';
 import { lookupCommands } from './lookup';
+import { registryCommands } from './registry';
 
-export const commands: Command[] = [help, ...rosterCommands, ...rosterAdminCommands, ...securityCommands, ...speechCommands, ...identityCommands, ...shiftCommands, ...lookupCommands];
+export const commands: Command[] = [help, ...rosterCommands, ...rosterAdminCommands, ...securityCommands, ...speechCommands, ...identityCommands, ...shiftCommands, ...lookupCommands, ...registryCommands];
 
 export const commandMap = new Map(commands.map((c) => [c.data.name, c]));
