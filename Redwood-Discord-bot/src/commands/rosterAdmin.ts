@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChannelType, MessageFlags } from 'discord.js';
+import { SlashCommandBuilder, ChannelType } from 'discord.js';
 import type { Command } from './types';
 import { line } from '../lib/voice';
 import { renderRoster } from '../lib/rosterTree';
@@ -8,8 +8,6 @@ import { config } from '../lib/config';
 import { desiredRoleIds, allManagedRoleIds } from '../lib/desiredRoles';
 import { redrawRoster } from '../roster/render';
 
-const EPH = { flags: MessageFlags.Ephemeral } as const;
-
 const rosterSetup: Command = {
   highCommandOnly: true,
   data: new SlashCommandBuilder().setName('roster-setup').setDescription('Post the live roster message in a channel.')
@@ -17,11 +15,11 @@ const rosterSetup: Command = {
   async execute(interaction) {
     const picked = interaction.options.getChannel('channel', true);
     const channel = await interaction.guild!.channels.fetch(picked.id).catch(() => null);
-    if (!channel || channel.type !== ChannelType.GuildText) return void interaction.reply({ content: line('err', 'Pick a text channel.'), ...EPH });
+    if (!channel || channel.type !== ChannelType.GuildText) return void interaction.editReply({ content: line('err', 'Pick a text channel.') });
     const body = renderRoster(await listActiveMembers());
     const msg = await channel.send('```\n' + body + '\n```');
     await setRosterConfig(interaction.guild!.id, channel.id, msg.id);
-    await interaction.reply({ content: line('ok', `Roster posted in <#${channel.id}>. It will keep itself current.`), ...EPH });
+    await interaction.editReply({ content: line('ok', `Roster posted in <#${channel.id}>. It will keep itself current.`) });
   },
 };
 
@@ -34,7 +32,7 @@ const syncRoles: Command = {
     const user = interaction.options.getUser('user', true);
     const m = await getMember(user.id);
     const gm = await interaction.guild!.members.fetch(user.id).catch(() => null);
-    if (!m || m.status !== 'active' || !gm) return void interaction.reply({ content: line('err', 'No active file for that member.'), ...EPH });
+    if (!m || m.status !== 'active' || !gm) return void interaction.editReply({ content: line('err', 'No active file for that member.') });
     const desired = new Set(desiredRoleIds(m, cfg));
     const managed = allManagedRoleIds(cfg);
     const toAdd = [...desired].filter((id) => !gm.roles.cache.has(id));
@@ -42,7 +40,7 @@ const syncRoles: Command = {
     if (toAdd.length) await gm.roles.add(toAdd);
     if (toRemove.length) await gm.roles.remove(toRemove);
     await redrawRoster(interaction.guild!);
-    await interaction.reply({ content: line('ok', `Re-synced roles for **${m.employeeName}**.`), ...EPH });
+    await interaction.editReply({ content: line('ok', `Re-synced roles for **${m.employeeName}**.`) });
   },
 };
 
