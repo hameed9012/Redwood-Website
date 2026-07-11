@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, ChannelType } from 'discord.js';
 import type { Command } from './types';
 import { line } from '../lib/voice';
-import { renderRoster } from '../lib/rosterTree';
+import { rosterEmbed } from '../lib/embeds';
 import { listActiveMembers, getMember } from '../db/members';
 import { setRosterConfig } from '../db/config';
 import { config } from '../lib/config';
@@ -10,14 +10,13 @@ import { redrawRoster } from '../roster/render';
 
 const rosterSetup: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('roster-setup').setDescription('Post the live roster message in a channel.')
+  data: new SlashCommandBuilder().setName('roster-setup').setDescription('Post the live roster in a channel (it updates itself).')
     .addChannelOption((o) => o.setName('channel').setDescription('Channel for the roster').addChannelTypes(ChannelType.GuildText).setRequired(true)) as SlashCommandBuilder,
   async execute(interaction) {
     const picked = interaction.options.getChannel('channel', true);
     const channel = await interaction.guild!.channels.fetch(picked.id).catch(() => null);
     if (!channel || channel.type !== ChannelType.GuildText) return void interaction.editReply({ content: line('err', 'Pick a text channel.') });
-    const body = renderRoster(await listActiveMembers());
-    const msg = await channel.send('```\n' + body + '\n```');
+    const msg = await channel.send({ embeds: [rosterEmbed(await listActiveMembers())] });
     await setRosterConfig(interaction.guild!.id, channel.id, msg.id);
     await interaction.editReply({ content: line('ok', `Roster posted in <#${channel.id}>. It will keep itself current.`) });
   },
@@ -25,7 +24,7 @@ const rosterSetup: Command = {
 
 const syncRoles: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('sync-roles').setDescription('Re-apply Discord roles from the roster for a member.')
+  data: new SlashCommandBuilder().setName('sync-roles').setDescription("Re-apply a member's Discord roles from the roster.")
     .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true)) as SlashCommandBuilder,
   async execute(interaction) {
     const cfg = config();

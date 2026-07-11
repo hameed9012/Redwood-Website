@@ -6,8 +6,10 @@ import type { Rank } from '../lib/ranks';
 import type { Member } from '../lib/member';
 import { getMember } from '../db/members';
 import { getActiveIdentity, issueIdentity } from '../db/identities';
-import { generateIdentity } from '../lib/identityGen';
+import { burnActiveIdentity } from '../db/reputation';
+import { generateIdentity, guessGender } from '../lib/identityGen';
 import { applyRosterChange } from '../roster/apply';
+import { identityEmbed } from '../lib/embeds';
 
 async function targetMember(interaction: ChatInputCommandInteraction): Promise<GuildMember | null> {
   const user = interaction.options.getUser('user', true);
@@ -21,20 +23,24 @@ function newMember(discordId: string, employeeName: string, rank: Rank): Member 
 
 const identity: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('identity').setDescription('Identity packets.')
-    .addSubcommand((s) => s.setName('create').setDescription('Onboard a member with a fresh identity.')
+  data: new SlashCommandBuilder().setName('identity').setDescription('Create and manage member identities.')
+    .addSubcommand((s) => s.setName('create').setDescription('Onboard a member and issue their cover identity.')
       .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
       .addStringOption((o) => o.setName('name').setDescription('Their roleplay name (from their application)').setRequired(true))
       .addStringOption((o) => o.setName('rank').setDescription('Starting rank').setRequired(true)
         .addChoices(...RANKS.map((r) => ({ name: RANK_LABEL[r], value: r })))))
-    .addSubcommand((s) => s.setName('rotate').setDescription('Issue new papers, keep the employee name.')
+    .addSubcommand((s) => s.setName('rotate').setDescription('Issue a member fresh papers (keeps their name).')
       .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true)))
-    .addSubcommand((s) => s.setName('view').setDescription("Show a member's current packet.")
-      .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))) as SlashCommandBuilder,
+    .addSubcommand((s) => s.setName('view').setDescription("Show a member's current identity packet.")
+      .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true)))
+    .addSubcommand((s) => s.setName('burn').setDescription("Burn a member's cover and issue fresh papers.")
+      .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
+      .addStringOption((o) => o.setName('reason').setDescription('Why it is compromised').setRequired(true))) as SlashCommandBuilder,
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
     if (sub === 'create') return create(interaction);
     if (sub === 'rotate') return rotate(interaction);
+    if (sub === 'burn') return burn(interaction);
     return view(interaction);
   },
 };
@@ -50,12 +56,11 @@ async function create(interaction: ChatInputCommandInteraction) {
   if (!isRank(rank)) return void interaction.editReply({ content: line('err', 'Unknown rank.') });
   const employeeName = interaction.options.getString('name', true);
 
-  const cover = generateIdentity();
-  await applyRosterChange(interaction.guild!, gm, newMember(gm.id, employeeName, rank), interaction.user.id, 'identity_create', rank);
-  await issueIdentity(gm.id, cover);
-  await interaction.editReply({
-    content: line('ok', `Onboarded **${employeeName}** as ${RANK_LABEL[rank]}. Cover issued under **${cover.legalName}**. Welcome to Redwood Peak.`),
-  });
+  const cover = generateIdentity(guessGender(employeeName));
+  const m = newMember(gm.id, employeeName, rank);
+  await applyRosterChange(interaction.guild!, gm, m, interaction.user.id, 'identity_create', rank);
+  const issued = await issueIdentity(gm.id, cover);
+  await interaction.editReply({ embeds: [identityEmbed(m, issued, 'Identity issued', 'success')] });
 }
 
 async function rotate(interaction: ChatInputCommandInteraction) {
@@ -63,9 +68,9 @@ async function rotate(interaction: ChatInputCommandInteraction) {
   if (!gm) return void interaction.editReply({ content: line('err', 'That member is not in the server.') });
   const m = await getMember(gm.id);
   if (!m || m.status !== 'active') return void interaction.editReply({ content: line('deny', 'That member is not on the roster.') });
-  const cover = generateIdentity();
-  await issueIdentity(gm.id, cover);
-  await interaction.editReply({ content: line('ok', `New papers for **${m.employeeName}** — now **${cover.legalName}**. The old cover is retired.`) });
+  const cover = generateIdentity(guessGender(m.employeeName));
+  const issued = await issueIdentity(gm.id, cover);
+  await interaction.editReply({ embeds: [identityEmbed(m, issued, 'New papers filed', 'success')] });
 }
 
 async function view(interaction: ChatInputCommandInteraction) {
@@ -73,21 +78,18 @@ async function view(interaction: ChatInputCommandInteraction) {
   const m = await getMember(user.id);
   const id = await getActiveIdentity(user.id);
   if (!m || !id) return void interaction.editReply({ content: line('err', 'No active identity on file for that member.') });
-  await interaction.editReply({
-    content: [
-      '```',
-      'REDWOOD PEAK — IDENTITY PACKET',
-      `Employee     : ${m.employeeName}`,
-      `Legal name   : ${id.legalName}`,
-      `DOB          : ${id.dob}`,
-      `SSN          : ${id.ssn}`,
-      `ID number    : ${id.idNumber}`,
-      `Blood type   : ${id.bloodType}`,
-      `Next of kin  : ${id.nextOfKin}`,
-      `Issued       : ${id.issuedAt.slice(0, 10)}`,
-      '```',
-    ].join('\n'),
-  });
+  await interaction.editReply({ embeds: [identityEmbed(m, id, 'Identity packet')] });
+}
+
+async function burn(interaction: ChatInputCommandInteraction) {
+  const gm = await targetMember(interaction);
+  if (!gm) return void interaction.editReply({ content: line('err', 'That member is not in the server.') });
+  const m = await getMember(gm.id);
+  if (!m || m.status !== 'active') return void interaction.editReply({ content: line('deny', 'That member is not on the roster.') });
+  await burnActiveIdentity(gm.id);
+  const cover = generateIdentity(guessGender(m.employeeName));
+  const issued = await issueIdentity(gm.id, cover);
+  await interaction.editReply({ embeds: [identityEmbed(m, issued, 'Cover burned — new papers filed', 'success')] });
 }
 
 export const identityCommands: Command[] = [identity];

@@ -5,7 +5,7 @@ import { line } from '../lib/voice';
 /** Speak as the bot: post a message to a channel in the company's voice. High Command only. */
 const say: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('say').setDescription('Speak as Redwood Peak.')
+  data: new SlashCommandBuilder().setName('say').setDescription('Send a message as Redwood Peak.')
     .addStringOption((o) => o.setName('message').setDescription('What the company should say').setRequired(true))
     .addChannelOption((o) => o.setName('channel').setDescription('Where to say it (defaults to here)').addChannelTypes(ChannelType.GuildText)) as SlashCommandBuilder,
   async execute(interaction) {

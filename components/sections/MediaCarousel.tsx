@@ -3,14 +3,16 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Section } from './Section';
 import { Redacted } from '@/components/portal/Document';
+import { loadSlides, pickSlides } from '@/lib/carousel';
 
 interface Slide {
   title: string;
-  gradient: string;
   body: ReactNode;
+  gradient?: string;
+  imageUrl?: string;
 }
 
-const SLIDES: Slide[] = [
+const DEFAULT_SLIDES: Slide[] = [
   {
     title: 'Neighborhood cleanup',
     gradient: 'from-rw-charcoal to-rw-red-deep',
@@ -58,23 +60,35 @@ const SLIDES: Slide[] = [
 const ADVANCE_MS = 6000;
 
 /**
- * Media carousel (spec §4.3): auto-advances every ~6s, pauses fully while the
- * cursor is anywhere over the slide, and carries redaction bars on the cleanup
- * and tanker slides. Placeholder brand-toned gradients stand in for imagery.
+ * Media carousel: auto-advances every ~6s, pauses while hovered. Slides come
+ * from Supabase (managed by the bot's /carousel command); if none are set it
+ * falls back to the built-in slides so the section is never empty.
  */
 export function MediaCarousel() {
+  const [slides, setSlides] = useState<Slide[]>(DEFAULT_SLIDES);
   const [index, setIndex] = useState(0);
   const paused = useRef(false);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      if (paused.current) return;
-      setIndex((i) => (i + 1) % SLIDES.length);
-    }, ADVANCE_MS);
-    return () => clearInterval(timer);
+    let cancelled = false;
+    loadSlides().then((db) => {
+      if (cancelled) return;
+      const mapped: Slide[] = db.map((s) => ({ title: s.title, body: s.body, imageUrl: s.imageUrl }));
+      setSlides(pickSlides(mapped, DEFAULT_SLIDES));
+      setIndex(0);
+    });
+    return () => { cancelled = true; };
   }, []);
 
-  const slide = SLIDES[index];
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (paused.current) return;
+      setIndex((i) => (i + 1) % slides.length);
+    }, ADVANCE_MS);
+    return () => clearInterval(timer);
+  }, [slides.length]);
+
+  const slide = slides[index];
 
   return (
     <Section id="media" align="left">
@@ -86,10 +100,14 @@ export function MediaCarousel() {
         onMouseEnter={() => { paused.current = true; }}
         onMouseLeave={() => { paused.current = false; }}
       >
-        <div
-          aria-hidden
-          className={`min-h-[220px] rounded-xl bg-gradient-to-br ${slide.gradient} ring-1 ring-rw-bone/10 transition-[background] duration-700`}
-        />
+        <div className="min-h-[220px] overflow-hidden rounded-xl ring-1 ring-rw-bone/10">
+          {slide.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={slide.imageUrl} alt="" className="h-full max-h-[320px] w-full object-cover" />
+          ) : (
+            <div aria-hidden className={`h-full min-h-[220px] bg-gradient-to-br ${slide.gradient ?? ''} transition-[background] duration-700`} />
+          )}
+        </div>
         <div className="flex flex-col justify-center">
           <h3 className="text-xl font-bold text-rw-bone">{slide.title}</h3>
           <p className="mt-3 text-sm leading-relaxed text-rw-bone/75 md:text-base">{slide.body}</p>
@@ -97,9 +115,9 @@ export function MediaCarousel() {
       </div>
 
       <div className="mt-6 flex gap-2">
-        {SLIDES.map((s, i) => (
+        {slides.map((s, i) => (
           <button
-            key={s.title}
+            key={`${s.title}-${i}`}
             type="button"
             aria-label={`Show ${s.title}`}
             onClick={() => setIndex(i)}

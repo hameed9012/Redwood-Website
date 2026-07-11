@@ -1,5 +1,5 @@
 import type { Guild } from 'discord.js';
-import { renderRoster } from '../lib/rosterTree';
+import { rosterEmbed } from '../lib/embeds';
 import { listActiveMembers } from '../db/members';
 import { getRosterConfig } from '../db/config';
 
@@ -11,6 +11,5 @@ export async function redrawRoster(guild: Guild): Promise<void> {
   if (!channel || !channel.isTextBased()) return;
   const message = await channel.messages.fetch(cfg.messageId).catch(() => null);
   if (!message) return;
-  const body = renderRoster(await listActiveMembers());
-  await message.edit('```\n' + body + '\n```');
+  await message.edit({ content: '', embeds: [rosterEmbed(await listActiveMembers())] });
 }

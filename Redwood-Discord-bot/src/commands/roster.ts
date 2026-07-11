@@ -4,6 +4,9 @@ import { line } from '../lib/voice';
 import { RANKS, DIVISIONS, POSITIONS, RANK_LABEL, DIVISION_LABEL, POSITION_LABEL, nextRank, prevRank, isRank, isDivision, isPosition, type Division, type Position } from '../lib/ranks';
 import { getMember } from '../db/members';
 import { applyRosterChange } from '../roster/apply';
+import { whoisEmbed } from '../lib/embeds';
+import { reputationForActiveMember } from '../db/reputation';
+import { summarizeReputation } from '../lib/reputation';
 
 async function targetMember(interaction: ChatInputCommandInteraction): Promise<GuildMember | null> {
   const user = interaction.options.getUser('user', true);
@@ -23,21 +26,21 @@ async function moveRank(interaction: ChatInputCommandInteraction, dir: 'promote'
 
 const promote: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('promote').setDescription('Promote a member one rank.')
+  data: new SlashCommandBuilder().setName('promote').setDescription('Move a member up one rank.')
     .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true)) as SlashCommandBuilder,
   execute: (i) => moveRank(i, 'promote'),
 };
 
 const demote: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('demote').setDescription('Demote a member one rank.')
+  data: new SlashCommandBuilder().setName('demote').setDescription('Move a member down one rank.')
     .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true)) as SlashCommandBuilder,
   execute: (i) => moveRank(i, 'demote'),
 };
 
 const setrank: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('setrank').setDescription('Set a member to a specific rank.')
+  data: new SlashCommandBuilder().setName('setrank').setDescription("Set a member's rank directly.")
     .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
     .addStringOption((o) => o.setName('rank').setDescription('Rank').setRequired(true)
       .addChoices(...RANKS.map((r) => ({ name: RANK_LABEL[r], value: r })))) as SlashCommandBuilder,
@@ -55,7 +58,7 @@ const setrank: Command = {
 
 const division: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('division').setDescription('Add or remove a division for a member.')
+  data: new SlashCommandBuilder().setName('division').setDescription('Add or remove a member from a division.')
     .addStringOption((o) => o.setName('action').setDescription('add or remove').setRequired(true)
       .addChoices({ name: 'add', value: 'add' }, { name: 'remove', value: 'remove' }))
     .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
@@ -78,7 +81,7 @@ const division: Command = {
 
 const position: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('position').setDescription('Add or remove a position for a member.')
+  data: new SlashCommandBuilder().setName('position').setDescription('Give or take away a member position.')
     .addStringOption((o) => o.setName('action').setDescription('add or remove').setRequired(true)
       .addChoices({ name: 'add', value: 'add' }, { name: 'remove', value: 'remove' }))
     .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
@@ -101,7 +104,7 @@ const position: Command = {
 
 const dismiss: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('dismiss').setDescription('Dismiss a member (strip standing).')
+  data: new SlashCommandBuilder().setName('dismiss').setDescription('Remove a member from the company.')
     .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
     .addStringOption((o) => o.setName('note').setDescription('Reason (optional)')) as SlashCommandBuilder,
   async execute(interaction) {
@@ -117,22 +120,14 @@ const dismiss: Command = {
 
 const whois: Command = {
   highCommandOnly: false,
-  data: new SlashCommandBuilder().setName('whois').setDescription("Show a member's file.")
+  data: new SlashCommandBuilder().setName('whois').setDescription("Look up a member's file.")
     .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true)) as SlashCommandBuilder,
   async execute(interaction) {
     const user = interaction.options.getUser('user', true);
     const m = await getMember(user.id);
     if (!m) return void interaction.editReply({ content: line('err', 'No file on that member.') });
-    const divs = m.divisions.map((d) => DIVISION_LABEL[d]).join(', ') || '—';
-    const pos = m.positions.map((p) => POSITION_LABEL[p]).join(', ') || '—';
-    await interaction.editReply({
-      content: [
-        `**${m.employeeName}** — ${RANK_LABEL[m.rank]}${m.status === 'dismissed' ? ' (dismissed)' : ''}`,
-        `Divisions: ${divs}`,
-        `Positions: ${pos}`,
-        `Hired: ${m.joinedAt.slice(0, 10)}`,
-      ].join('\n'),
-    });
+    const standing = summarizeReputation(await reputationForActiveMember(m.discordId));
+    await interaction.editReply({ embeds: [whoisEmbed(m, standing)] });
   },
 };
 

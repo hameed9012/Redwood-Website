@@ -3,10 +3,11 @@ import type { Command } from './types';
 import { line } from '../lib/voice';
 import { config } from '../lib/config';
 import { setLockdown, setDeadmanDeadline } from '../db/config';
+import { lockdownEmbed } from '../lib/embeds';
 
 const lockdown: Command = {
   highCommandOnly: true,
-  data: new SlashCommandBuilder().setName('lockdown').setDescription('Seal or unseal the site.')
+  data: new SlashCommandBuilder().setName('lockdown').setDescription('Seal or open the server.')
     .addStringOption((o) => o.setName('state').setDescription('on or off').setRequired(true)
       .addChoices({ name: 'on', value: 'on' }, { name: 'off', value: 'off' })) as SlashCommandBuilder,
   async execute(interaction) {
@@ -18,7 +19,7 @@ const lockdown: Command = {
       }
     }
     await setLockdown(interaction.guild!.id, on);
-    await interaction.editReply({ content: line('ok', on ? 'The site is sealed. Unregistered personnel are denied.' : 'The site is open.') });
+    await interaction.editReply({ embeds: [lockdownEmbed(on)] });
   },
 };
 
