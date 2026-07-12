@@ -1,5 +1,29 @@
 # Redwood Peak — Bot Changelog
 
+## v1.6b — the doors open for business
+
+the ledger had a promise attached to it: *orders, donations, and payroll all land here next.* here's the first half of that. the company now has a public face that takes work and takes money — and the money finds its own way onto the books.
+
+### the storefront — `/storefront`
+- `/storefront post #channel` drops a **public embed** — who we are, that we're open — with two buttons: **place an order** and **donate**.
+- **place an order** opens a **private ticket thread**, pulls the customer in, and pings high command. the conversation happens where the public can't see it.
+
+### donations
+- **donate** pops a small form — an amount, and a name to credit or stay anonymous. on submit the sum lands on the **white book** as an inflow (tagged `donation`), and gets filed to a private donations channel.
+- donations are **private by default**. a public thank-you only fires for the serious money — **$50,000 and up**. small givers stay quiet; big ones get named (or credited as "an anonymous benefactor" if they'd rather).
+
+### orders that pay themselves — the pipeline
+- an order ticket isn't just a chat anymore; it has a **lifecycle**: open → claimed → fulfilled → done. or **cancelled** from anywhere, in which case no money moves.
+- work it with the buttons on the order card, or `/order claim | fulfill | done | cancel | status` for the keyboard crowd. **claim** takes ownership, **fulfilled** sets the amount collected, **done** closes it out.
+- the instant it's **done**, the amount posts *itself* to the ledger — white book, tagged `order`, reason `Order #N — …`. exactly once: the books can never be hit twice for the same job, and if the ledger write chokes the order refuses to call itself done, so a finished order always has its money on it.
+- every step redraws the order card in the thread, so anyone watching sees exactly where it stands.
+
+### under the hood
+- one new `orders` table; everything else rides rails already laid — the same books, the same buttons-and-threads plumbing. the bot's role needs **create / manage private threads** in the storefront channel, plus an optional `CHANNEL_DONATIONS` for the private donation log.
+- payroll is the piece still owed. it lands on these same books next.
+
+---
+
 ## v1.6 — the paper trail grows teeth
 
 v1.0 gave the company a memory. this stretch gives it a *nervous system* — the records it was quietly hoarding are now searchable, cross-referenced, and worth money. plus a coat of polish so the whole thing stops looking like a bot and starts looking like an institution.
