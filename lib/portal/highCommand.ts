@@ -34,15 +34,5 @@ export interface Directive {
 // Empty — populate with real directives when ready.
 export const DIRECTIVES: Directive[] = [];
 
-export interface LedgerEntry {
-  id: string;
-  date: string;
-  direction: 'in' | 'out';
-  amount: number;
-  counterparty: string;
-  redacted?: boolean;
-  note?: string;
-}
-
-// Empty — populate with real ledger entries when ready.
-export const LEDGER: LedgerEntry[] = [];
+// The deep ledger is read live from the bot's `ledger_entries` table — see
+// lib/portal/command.ts (loadLedger) and app/portal/command/page.tsx.
