@@ -1,5 +1,43 @@
 # Redwood Peak — Bot Changelog
 
+## v1.6 — the paper trail grows teeth
+
+v1.0 gave the company a memory. this stretch gives it a *nervous system* — the records it was quietly hoarding are now searchable, cross-referenced, and worth money. plus a coat of polish so the whole thing stops looking like a bot and starts looking like an institution.
+
+### the polish pass
+- **every embed is themed now** — company red for the ordinary, a deeper red for denials, muted green for a job done, amber for a warning. you can tell how a command went by the color before you read a word.
+- **the voice got tightened** everywhere — confirmations, denials, errors, all shorter and colder.
+- **cover identities got names that match** — the fake papers now pick a first name that fits the person instead of pulling at random, so a cover reads like a real person and not a shuffled deck.
+
+### `/lookup` — the police database
+all those names, plates, and badges you've been logging on shift stop being a pile and become a **search**.
+- `/lookup name:` / `plate:` / `badge:` — pull everyone and everything the company has on a person, vehicle, or officer: every incident they appeared in, when, where, alongside whom.
+- it reads straight off the shift logs. the more the org works, the more it knows.
+
+### the registries — `/registry`
+the things the company owns and the things it's watching, written down.
+- **assets, vehicles, properties, contacts** — each filed with its own record, cross-referenced against `/lookup`.
+- add, view, and list, all clearance-gated. the org finally has an inventory instead of a vibe.
+
+### reputation & the burn — `/rep`
+people the company deals with earn a standing, and standing can be *revoked*.
+- track reputation on a contact — trusted, watched, or marked.
+- **burn a name** — when someone goes too hot, you torch the record and everything downstream knows they're radioactive. tied into identity rotation, so a burned cover actually burns.
+
+### the media carousel
+- the website's **Media** section now runs off the bot. `/carousel` manages the slides — the community-outreach stories, the fleet, the storefront — and the site pulls them live. no redeploy to change what the public sees.
+
+### the ledger — `/ledger`
+the company keeps books now. two of them.
+- **white book** (clean, on the record) and **black book** (off it). every entry is an inflow or an outflow with a reason and a source tag.
+- `/ledger record` files an entry; `/ledger summary` shows the balances on both books at a glance.
+- this is the foundation the economy sits on — orders, donations, and payroll all land here next.
+
+### under the hood
+- same shared supabase, same ubuntu box. new tables for lookups, registries, reputation, carousel slides, and the ledger — all gated by clearance, all feeding the website where it's safe to.
+
+---
+
 ## v1.0 — the company, now wearing a bot
 
 first real version. it's not a game and it's not a carl/dyno clone — it's the records-and-security layer wrapped around the ERLC roleplay, and it talks like the company: deadpan, over-polite, faintly threatening. every confirmation and error is in-voice. here's everything it does.
