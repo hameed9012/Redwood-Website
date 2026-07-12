@@ -44,11 +44,22 @@ function auditKeys(): void {
   }
 }
 
+/**
+ * Fetch that opts out of Next.js's Data Cache. This client is a module-level
+ * singleton created outside any request scope, so a route's `force-dynamic` /
+ * `fetchCache` config never reaches its queries — without this, Next caches the
+ * PostgREST GET responses and portal pages keep serving deleted/edited rows
+ * until the cache evicts. `no-store` forces every read to hit the database live.
+ */
+const noStoreFetch: typeof fetch = (input, init) => fetch(input, { ...init, cache: 'no-store' });
+
 export function serverDb(): SupabaseClient | null {
   if (cached !== undefined) return cached;
   auditKeys();
   const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY;
-  cached = url && key ? createClient(url, key, { auth: { persistSession: false } }) : null;
+  cached = url && key
+    ? createClient(url, key, { auth: { persistSession: false }, global: { fetch: noStoreFetch } })
+    : null;
   return cached;
 }
