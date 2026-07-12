@@ -11,7 +11,8 @@ import { registryCommands } from './registry';
 import { reputationCommands } from './reputation';
 import { carouselCommands } from './carousel';
 import { ledgerCommands } from './ledger';
+import { storefrontCommands } from './storefront';
 
-export const commands: Command[] = [help, ...rosterCommands, ...rosterAdminCommands, ...securityCommands, ...speechCommands, ...identityCommands, ...shiftCommands, ...lookupCommands, ...registryCommands, ...reputationCommands, ...carouselCommands, ...ledgerCommands];
+export const commands: Command[] = [help, ...rosterCommands, ...rosterAdminCommands, ...securityCommands, ...speechCommands, ...identityCommands, ...shiftCommands, ...lookupCommands, ...registryCommands, ...reputationCommands, ...carouselCommands, ...ledgerCommands, ...storefrontCommands];
 
 export const commandMap = new Map(commands.map((c) => [c.data.name, c]));
