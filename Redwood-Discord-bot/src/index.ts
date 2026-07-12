@@ -10,6 +10,7 @@ import * as memberAdd from './events/guildMemberAdd';
 import * as messageCreate from './events/messageCreate';
 import * as auditLog from './events/guildAuditLogEntryCreate';
 import { loggingHandlers } from './events/logging';
+import { routeButton, routeModal } from './interactions/storefront';
 
 const cfg = config(); // validates env; throws with a clear message if misconfigured
 
@@ -45,6 +46,8 @@ client.on(auditLog.name, auditLog.execute);
 for (const h of loggingHandlers) client.on(h.name, h.execute as (...args: unknown[]) => void);
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  if (interaction.isButton()) return routeButton(interaction, cfg);
+  if (interaction.isModalSubmit()) return routeModal(interaction, cfg);
   if (!interaction.isChatInputCommand() || !interaction.guild) return;
   const command = commandMap.get(interaction.commandName);
   if (!command) return;
