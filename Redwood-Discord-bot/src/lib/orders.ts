@@ -81,3 +81,22 @@ export function parseAmount(amountStr: string): { ok: true; amount: number } | {
   if (amount <= 0) return { ok: false, error: 'The amount has to be more than nothing.' };
   return { ok: true, amount };
 }
+
+export const STATUS_LABEL: Record<OrderStatus, string> = {
+  open: 'Open', claimed: 'Claimed', fulfilled: 'Fulfilled', done: 'Done', cancelled: 'Cancelled',
+};
+
+/** The order status card. Info while active, success on done, denied on cancelled. */
+export function orderCardEmbed(order: Order): EmbedBuilder {
+  const tone: Tone = order.status === 'done' ? 'success' : order.status === 'cancelled' ? 'denied' : 'info';
+  const e = baseEmbed(tone, 'Orders')
+    .setTitle(`Order #${order.seq}`)
+    .addFields(
+      { name: 'Status', value: STATUS_LABEL[order.status], inline: true },
+      { name: 'Customer', value: `<@${order.customerId}>`, inline: true },
+      { name: 'Claimed by', value: order.claimedBy ? `<@${order.claimedBy}>` : '—', inline: true },
+      { name: 'Amount', value: order.amount != null ? formatMoney(order.amount) : '—', inline: true },
+    );
+  if (order.summary) e.setDescription(order.summary);
+  return e;
+}

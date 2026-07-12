@@ -7,7 +7,9 @@ import {
   parseAmount,
   orderButtons,
   ORDER_ACTION_PREFIX,
+  orderCardEmbed,
   type OrderStatus,
+  type Order,
 } from './orders';
 
 const ALL: OrderStatus[] = ['open', 'claimed', 'fulfilled', 'done', 'cancelled'];
@@ -79,5 +81,25 @@ describe('orderButtons', () => {
   });
   it('every action id starts with the routing prefix', () => {
     for (const id of idsOf(orderButtons('o1', 'open'))) expect(id.startsWith(ORDER_ACTION_PREFIX)).toBe(true);
+  });
+});
+
+const baseOrder: Order = {
+  id: 'o1', seq: 7, customerId: 'C1', threadId: 'T1', status: 'open',
+  claimedBy: null, amount: null, summary: 'Move a crate', createdAt: '2026-07-12T00:00:00Z',
+};
+
+describe('orderCardEmbed', () => {
+  it('titles by seq and tones by status', () => {
+    expect(orderCardEmbed({ ...baseOrder, status: 'open' }).toJSON().color).toBe(0xc1272d); // info
+    expect(orderCardEmbed({ ...baseOrder, status: 'done', amount: 25000, claimedBy: 'E1' }).toJSON().color).toBe(0x4c8055); // success
+    expect(orderCardEmbed({ ...baseOrder, status: 'cancelled' }).toJSON().color).toBe(0x7a1518); // denied
+    expect(orderCardEmbed(baseOrder).toJSON().title).toBe('Order #7');
+  });
+  it('shows amount and claimer when present', () => {
+    const json = orderCardEmbed({ ...baseOrder, status: 'done', amount: 25000, claimedBy: 'E1' }).toJSON();
+    const fields = JSON.stringify(json.fields);
+    expect(fields).toContain('$25,000');
+    expect(fields).toContain('E1');
   });
 });
