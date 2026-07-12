@@ -20,6 +20,9 @@ import {
   donationLogLine,
   donationPublicLine,
 } from '../lib/storefront';
+import { createOrder } from '../db/orders';
+import { orderButtons, orderCardEmbed, ORDER_ACTION_PREFIX, ORDER_AMOUNT_MODAL_PREFIX } from '../lib/orders';
+import { handleOrderAction, handleOrderAmountModal } from './orders';
 
 /** Place an order → private thread + HC ping. Slow work, so defer first. */
 export async function handleOrderButton(interaction: ButtonInteraction, cfg: BotConfig): Promise<void> {
@@ -40,6 +43,9 @@ export async function handleOrderButton(interaction: ButtonInteraction, cfg: Bot
     `<@&${cfg.roleForRank['high-command']}> — new order from <@${interaction.user.id}>. ` +
       'State the job: what, where, when. Someone will be with you.',
   );
+  const order = await createOrder(interaction.user.id, thread.id, '');
+  const row = orderButtons(order.id, order.status);
+  await thread.send({ embeds: [orderCardEmbed(order)], components: row ? [row] : [] });
   await interaction.editReply({ content: line('ok', `Your ticket is open: ${thread}. Tell us what you need there.`) });
 }
 
@@ -94,6 +100,7 @@ export async function routeButton(interaction: ButtonInteraction, cfg: BotConfig
   try {
     if (interaction.customId === ORDER_BUTTON) return await handleOrderButton(interaction, cfg);
     if (interaction.customId === DONATE_BUTTON) return await handleDonateButton(interaction);
+    if (interaction.customId.startsWith(ORDER_ACTION_PREFIX)) return await handleOrderAction(interaction);
   } catch (err) {
     await replyError(interaction, err);
   }
@@ -103,6 +110,7 @@ export async function routeButton(interaction: ButtonInteraction, cfg: BotConfig
 export async function routeModal(interaction: ModalSubmitInteraction, cfg: BotConfig): Promise<void> {
   try {
     if (interaction.customId === DONATE_MODAL) return await handleDonateModal(interaction, cfg);
+    if (interaction.customId.startsWith(ORDER_AMOUNT_MODAL_PREFIX)) return await handleOrderAmountModal(interaction);
   } catch (err) {
     await replyError(interaction, err);
   }
