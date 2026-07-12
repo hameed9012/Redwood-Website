@@ -30,3 +30,17 @@ export function assertTransition(from: OrderStatus, to: OrderStatus): { ok: true
   if (from === 'done' || from === 'cancelled') return { ok: false, error: `This order is ${from} and can't change.` };
   return { ok: false, error: `An order can't go from ${from} to ${to}.` };
 }
+
+/** Statuses that require a positive amount to be set on the order. */
+export function requiresAmount(to: OrderStatus): boolean {
+  return to === 'fulfilled' || to === 'done';
+}
+
+/** Strip $, commas, whitespace; accept whole positive dollars only. */
+export function parseAmount(amountStr: string): { ok: true; amount: number } | { ok: false; error: string } {
+  const cleaned = amountStr.replace(/[$,\s]/g, '');
+  if (!/^\d+$/.test(cleaned)) return { ok: false, error: 'That is not a whole-dollar amount. Round numbers only.' };
+  const amount = Number(cleaned);
+  if (amount <= 0) return { ok: false, error: 'The amount has to be more than nothing.' };
+  return { ok: true, amount };
+}
