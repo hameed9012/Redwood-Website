@@ -24,6 +24,8 @@ export interface BotConfig {
   channelHighCommand: string;
   /** Optional server-log channel (joins/leaves/deletes/edits). Logging is off if unset. */
   channelLog?: string;
+  /** Optional private donations-log channel. If unset, the private log post is skipped. */
+  channelDonations?: string;
   deadmanIntervalHours: number;
 }
 
@@ -58,6 +60,7 @@ export function buildConfig(env: Record<string, string | undefined>): BotConfig 
     channelSecurity: env.CHANNEL_SECURITY!,
     channelHighCommand: env.CHANNEL_HIGH_COMMAND!,
     channelLog: env.CHANNEL_LOG || undefined,
+    channelDonations: env.CHANNEL_DONATIONS || undefined,
     deadmanIntervalHours: Number(env.DEADMAN_INTERVAL_HOURS ?? '48'),
   };
 }
