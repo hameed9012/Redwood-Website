@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { canTransition, assertTransition, TRANSITIONS, requiresAmount, parseAmount, type OrderStatus } from './orders';
+import {
+  canTransition,
+  assertTransition,
+  TRANSITIONS,
+  requiresAmount,
+  parseAmount,
+  orderButtons,
+  ORDER_ACTION_PREFIX,
+  type OrderStatus,
+} from './orders';
 
 const ALL: OrderStatus[] = ['open', 'claimed', 'fulfilled', 'done', 'cancelled'];
 
@@ -50,5 +59,25 @@ describe('parseAmount', () => {
   });
   it('rejects zero, negatives, decimals, and non-numeric', () => {
     for (const bad of ['0', '-5', '1.5', 'abc', '']) expect(parseAmount(bad).ok).toBe(false);
+  });
+});
+
+function idsOf(row: ReturnType<typeof orderButtons>): string[] {
+  if (!row) return [];
+  return (row.toJSON() as { components: { custom_id: string }[] }).components.map((c) => c.custom_id);
+}
+
+describe('orderButtons', () => {
+  it('offers the right actions per stage, carrying the order id', () => {
+    expect(idsOf(orderButtons('o1', 'open'))).toEqual(['rw_order_claim:o1', 'rw_order_cancel:o1']);
+    expect(idsOf(orderButtons('o1', 'claimed'))).toEqual(['rw_order_fulfill:o1', 'rw_order_cancel:o1']);
+    expect(idsOf(orderButtons('o1', 'fulfilled'))).toEqual(['rw_order_done:o1', 'rw_order_cancel:o1']);
+  });
+  it('offers no buttons once done or cancelled', () => {
+    expect(orderButtons('o1', 'done')).toBeNull();
+    expect(orderButtons('o1', 'cancelled')).toBeNull();
+  });
+  it('every action id starts with the routing prefix', () => {
+    for (const id of idsOf(orderButtons('o1', 'open'))) expect(id.startsWith(ORDER_ACTION_PREFIX)).toBe(true);
   });
 });

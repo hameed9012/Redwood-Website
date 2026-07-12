@@ -1,3 +1,7 @@
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { baseEmbed, type Tone } from './embeds';
+import { formatMoney } from './ledger';
+
 export type OrderStatus = 'open' | 'claimed' | 'fulfilled' | 'done' | 'cancelled';
 
 export interface Order {
@@ -29,6 +33,39 @@ export function assertTransition(from: OrderStatus, to: OrderStatus): { ok: true
   if (from === to) return { ok: false, error: `This order is already ${from}.` };
   if (from === 'done' || from === 'cancelled') return { ok: false, error: `This order is ${from} and can't change.` };
   return { ok: false, error: `An order can't go from ${from} to ${to}.` };
+}
+
+export type OrderAction = 'claim' | 'fulfill' | 'done' | 'cancel';
+
+/** Button custom id shape: `rw_order_<action>:<orderId>`. Distinct from the
+ *  storefront `rw_order` button (exact match, no trailing underscore). */
+export const ORDER_ACTION_PREFIX = 'rw_order_';
+/** Fulfil-amount modal custom id shape: `rw_order_amount:<orderId>`. */
+export const ORDER_AMOUNT_MODAL_PREFIX = 'rw_order_amount:';
+export const ORDER_AMOUNT_FIELD = 'amount';
+
+export const ACTION_TARGET: Record<OrderAction, OrderStatus> = {
+  claim: 'claimed',
+  fulfill: 'fulfilled',
+  done: 'done',
+  cancel: 'cancelled',
+};
+
+function actionButton(action: OrderAction, orderId: string, label: string, style: ButtonStyle): ButtonBuilder {
+  return new ButtonBuilder().setCustomId(`${ORDER_ACTION_PREFIX}${action}:${orderId}`).setLabel(label).setStyle(style);
+}
+
+/** The action row valid for the current stage, or null when the order is terminal. */
+export function orderButtons(orderId: string, status: OrderStatus): ActionRowBuilder<ButtonBuilder> | null {
+  const btns: ButtonBuilder[] = [];
+  if (status === 'open') btns.push(actionButton('claim', orderId, 'Claim', ButtonStyle.Primary));
+  if (status === 'claimed') btns.push(actionButton('fulfill', orderId, 'Fulfilled', ButtonStyle.Primary));
+  if (status === 'fulfilled') btns.push(actionButton('done', orderId, 'Done', ButtonStyle.Success));
+  if (status === 'open' || status === 'claimed' || status === 'fulfilled') {
+    btns.push(actionButton('cancel', orderId, 'Cancel', ButtonStyle.Danger));
+  }
+  if (btns.length === 0) return null;
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(...btns);
 }
 
 /** Statuses that require a positive amount to be set on the order. */
