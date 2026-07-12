@@ -3,7 +3,7 @@ import type { Command } from './types';
 import { line } from '../lib/voice';
 import { getMember } from '../db/members';
 import { getActiveIdentity } from '../db/identities';
-import { getOpenShift, startShift, closeShift } from '../db/shifts';
+import { getOpenShift, startShift, closeShift, getLatestShift } from '../db/shifts';
 import { addIncident, addParty, latestIncidentForShift, countIncidents } from '../db/incidents';
 import { addReport } from '../db/reports';
 import { shiftDurationMinutes, formatDuration, validateParty, type PartyInput } from '../lib/shiftMath';
@@ -123,12 +123,12 @@ async function end(interaction: ChatInputCommandInteraction) {
 async function report(interaction: ChatInputCommandInteraction) {
   const m = await requireRoster(interaction);
   if (!m) return;
-  // Attach to the open shift if any, else the most recent — we just need a shift id.
-  const openShift = await getOpenShift(m.discordId);
-  if (!openShift) return void interaction.editReply({ content: line('deny', 'File reports during an open shift. `/shift start` first.') });
+  // Attach to the open shift if any, else the most recent shift — you can file after ending.
+  const shiftRow = (await getOpenShift(m.discordId)) ?? (await getLatestShift(m.discordId));
+  if (!shiftRow) return void interaction.editReply({ content: line('deny', 'You have no shifts on record. `/shift start` first.') });
   const subject = interaction.options.getString('subject', true);
   const body = interaction.options.getString('body', true);
-  await addReport(openShift.id, m.discordId, subject, body);
+  await addReport(shiftRow.id, m.discordId, subject, body);
   await interaction.editReply({ content: line('ok', 'Dossier filed. It joins the record.') });
 }
 
