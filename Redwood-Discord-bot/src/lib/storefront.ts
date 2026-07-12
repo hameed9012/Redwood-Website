@@ -1,5 +1,6 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
 import { baseEmbed } from './embeds';
+import { formatMoney } from './ledger';
 
 export const ORDER_BUTTON = 'rw_order';
 export const DONATE_BUTTON = 'rw_donate';
@@ -53,4 +54,14 @@ export function donateModal(): ModalBuilder {
       new ActionRowBuilder<TextInputBuilder>().addComponents(amount),
       new ActionRowBuilder<TextInputBuilder>().addComponents(name),
     );
+}
+
+export function donationLogLine(amount: number, name: string | null): string {
+  const who = name ?? 'anonymous';
+  return `💰 Donation recorded: ${formatMoney(amount)} — ${who} (white book).`;
+}
+
+export function donationPublicLine(amount: number, name: string | null): string {
+  const who = name ?? 'an anonymous benefactor';
+  return `Redwood Peak thanks ${who} for a generous contribution of ${formatMoney(amount)}.`;
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseDonation, ORDER_BUTTON, DONATE_BUTTON, DONATE_MODAL, DONATE_AMOUNT, DONATE_NAME, PUBLIC_DONATION_THRESHOLD, storefrontEmbed, storefrontButtons, donateModal } from './storefront';
+import { parseDonation, ORDER_BUTTON, DONATE_BUTTON, DONATE_MODAL, DONATE_AMOUNT, DONATE_NAME, PUBLIC_DONATION_THRESHOLD, storefrontEmbed, storefrontButtons, donateModal, donationLogLine, donationPublicLine } from './storefront';
 
 describe('parseDonation', () => {
   it('accepts whole positive dollars, stripping $ , and spaces', () => {
@@ -45,5 +45,19 @@ describe('storefront builders', () => {
     expect(fields.map((f) => f.custom_id)).toEqual(['amount', 'name']);
     expect(fields[0].required).toBe(true);
     expect(fields[1].required).toBe(false);
+  });
+});
+
+describe('donation lines', () => {
+  it('names the donor when given, applies formatMoney', () => {
+    expect(donationLogLine(50000, 'Lucia')).toContain('Lucia');
+    expect(donationLogLine(50000, 'Lucia')).toContain('$50,000');
+    expect(donationPublicLine(50000, 'Lucia')).toContain('Lucia');
+    expect(donationPublicLine(50000, 'Lucia')).toContain('$50,000');
+  });
+
+  it('falls back to anonymous wording when name is null', () => {
+    expect(donationLogLine(1000, null)).toContain('anonymous');
+    expect(donationPublicLine(1000, null)).toContain('anonymous benefactor');
   });
 });
