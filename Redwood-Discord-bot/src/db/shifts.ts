@@ -60,3 +60,11 @@ export async function listClosedShifts(limit = 50): Promise<Shift[]> {
   if (error) throw error;
   return (data as Row[]).map(toShift);
 }
+
+/** The member's most recent shift, open or closed (for filing a report after the shift ends). */
+export async function getLatestShift(discordId: string): Promise<Shift | null> {
+  const { data, error } = await db().from('shifts').select('*')
+    .eq('discord_id', discordId).order('started_at', { ascending: false }).limit(1).maybeSingle();
+  if (error) throw error;
+  return data ? toShift(data as Row) : null;
+}

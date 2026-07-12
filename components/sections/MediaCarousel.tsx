@@ -96,20 +96,20 @@ export function MediaCarousel() {
       <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-rw-bone md:text-4xl">Media</h2>
 
       <div
-        className="mt-8 grid items-stretch gap-6 md:grid-cols-2"
+        className="mt-8 grid items-center gap-8 md:grid-cols-[1.3fr_1fr]"
         onMouseEnter={() => { paused.current = true; }}
         onMouseLeave={() => { paused.current = false; }}
       >
-        <div className="min-h-[220px] overflow-hidden rounded-xl ring-1 ring-rw-bone/10">
+        <div className="aspect-[16/10] w-full overflow-hidden rounded-xl ring-1 ring-rw-bone/10">
           {slide.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={slide.imageUrl} alt="" className="h-full max-h-[320px] w-full object-cover" />
+            <img src={slide.imageUrl} alt="" className="h-full w-full object-cover" />
           ) : (
-            <div aria-hidden className={`h-full min-h-[220px] bg-gradient-to-br ${slide.gradient ?? ''} transition-[background] duration-700`} />
+            <div aria-hidden className={`h-full w-full bg-gradient-to-br ${slide.gradient ?? ''} transition-[background] duration-700`} />
           )}
         </div>
         <div className="flex flex-col justify-center">
-          <h3 className="text-xl font-bold text-rw-bone">{slide.title}</h3>
+          <h3 className="text-xl font-bold text-rw-bone md:text-2xl">{slide.title}</h3>
           <p className="mt-3 text-sm leading-relaxed text-rw-bone/75 md:text-base">{slide.body}</p>
         </div>
       </div>
