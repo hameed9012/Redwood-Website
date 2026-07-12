@@ -22,8 +22,15 @@ export function storefrontEmbed(): EmbedBuilder {
   return baseEmbed('info', 'Storefront')
     .setTitle('Redwood Peak — Open for Work')
     .setDescription(
-      'We move what needs moving and handle what needs handling. Discreet, thorough, reliable.\n\n' +
-        'Place an order to open a private line with us, or make a donation to keep the lights on.',
+      'We are a skilled and well known multi-million dollar pharmaceutical company, originally founded ' +
+        'on October 5, 2024, and have since expanded into multiple fields, including an official store ' +
+        'located on Valley Drive. We also operate a charity and other shell companies that have their ' +
+        'hands in other industries. Our core belief is that we should be present in every medical supply ' +
+        'chain, supporting pharmacies and partner companies so our products reach the people who need ' +
+        'them. We also believe in returning back to the community, and if you wish to support us in that, ' +
+        'kindly proceed with the **donate** button below — or apply in order to join our ranks and ' +
+        'continue making america greater.\n\n' +
+        'Our orders for medical supplies and more are also open. Do note we only deal in **bulk**.',
     );
 }
 
