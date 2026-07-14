@@ -3,7 +3,7 @@
 import { Section } from './Section';
 import { useTypeOnView } from './useTypeOnView';
 
-const HISTORY = `Redwood Peak is a skilled and well-known multi-million dollar medical company, originally founded October 5, 2024, and has since expanded into multiple fields — including an official camping equipment store located on Valley Drive. We also operate several shell companies specializing in other industries. Our core belief is that we should be present in every medical supply chain, supporting pharmacies and partner companies so our products reach the people who need them. We give back where we can, regularly collaborating with a cleaning company and local law enforcement on neighborhood cleanup efforts and community food truck initiatives. We deal exclusively with established companies, in large volume, and are open to negotiation on pricing for bulk contracts.`;
+const HISTORY = `Redwood Peak is a trusted and growing company founded on October 5, 2024, with operations across multiple fields. We are committed to providing reliable products, building strong partnerships, and delivering quality solutions to the organizations and communities we serve. Through collaboration, innovation, and community involvement, we continue to expand while maintaining professionalism, integrity, and a dedication to making a positive impact.`;
 
 /**
  * Company history (spec §4.1). Types itself out the first time it scrolls into
