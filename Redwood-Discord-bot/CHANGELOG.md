@@ -1,5 +1,68 @@
 # Redwood Peak — Bot Changelog
 
+## v1.6b — the doors open for business
+
+the ledger had a promise attached to it: *orders, donations, and payroll all land here next.* here's the first half of that. the company grew a **public face** — a storefront the outside world can walk up to, place an order, or drop a donation — and, behind it, an **order pipeline** that carries a job from "someone asked" all the way to "paid," posting its own earnings onto the books when it's finished. no one has to remember to write the money down anymore; the work writes it down itself.
+
+this is also the bot's first time listening for **buttons and pop-up forms**, not just slash commands. so a customer who's never touched a command can click one button and be talking to us.
+
+### the storefront — `/storefront`
+the shopfront window. one command, high-command only, that posts the thing the public actually sees.
+
+- **`/storefront post channel:<#channel>`** — *high command only.* drops the public storefront embed into the channel you pick. the embed says who we are and that we're open, and carries two buttons: **Place an order** and **Donate**. run it wherever the public should see us (a #storefront or #front-desk channel).
+  - to change the wording or re-post it, just run it again — it posts a **fresh** embed each time (editing an already-posted one isn't a thing yet). delete the old message if you don't want two.
+
+on that embed, anyone — customer or member — can press:
+
+- **🟦 Place an order** *(button)* — opens a **private ticket thread** off the storefront channel, named `order-<their name>`, adds the person who clicked, and **pings high command** so someone picks it up. the customer gets a quiet, only-they-can-see-it pointer to their new thread. this is also the moment a tracked **order** is created (see the pipeline below), and the order card is posted into the thread.
+- **⬜ Donate** *(button)* — opens the donation form (below).
+
+### donations — the Donate button
+clicking **Donate** pops a small form:
+
+- **Amount** *(required)* — whole dollars. `$` signs, commas, and stray spaces are fine (`$50,000`, `50000`, ` 1000 ` all work). decimals, zero, negatives, and words are rejected with a polite refusal and nothing gets written.
+- **Name to credit** *(optional)* — leave it blank to give **anonymously**.
+
+on submit:
+- the amount is recorded to the **white book** as an inflow, tagged `donation`, with a reason of `Donation from <name>` or `Donation (anonymous)` — so `/ledger summary` stays readable.
+- the donor gets a private thank-you only they can see.
+- if a private donations-log channel is configured (`CHANNEL_DONATIONS`), a line is filed there for the record.
+- **donations are private by default.** a **public** thank-you is posted in the storefront channel **only** for gifts of **$50,000 or more** — the donor named, or credited as "an anonymous benefactor" if they chose to stay quiet. small givers are never announced.
+
+### the order pipeline — the card buttons + `/order`
+every ticket opened by **Place an order** now has a real **lifecycle**, shown on a status card at the top of the thread:
+
+```
+open  →  claimed  →  fulfilled  →  done   (→ ledger inflow, tagged 'order')
+   └────────┴───────────┴──────→  cancelled   (no money moves)
+```
+
+state only moves forward, or to **cancelled**. it never goes backward, and a **done** or **cancelled** order is frozen.
+
+**work it with the buttons on the order card** (whoever's handling the job clicks them):
+- **Claim** — take ownership. the card records you as the claimer and flips to *claimed*.
+- **Fulfilled** — the work's done in-game; this pops a small form to enter the **amount collected** (whole dollars, same lenient parsing as donations). the card flips to *fulfilled* and shows the amount.
+- **Done** — close it out. the amount **posts itself to the ledger** and the card flips to *done* (green) with its buttons removed.
+- **Cancel** — kill the order. the card flips to *cancelled* (red). **no ledger entry.**
+
+**or drive it from the keyboard with `/order`** — run these **inside the order's thread** (it finds the order by which thread you're in). a reliable mirror of the buttons:
+- **`/order status`** — show the order's current card. anyone in the thread can run it (including the customer).
+- **`/order claim`** — take ownership of this order. *(any active roster member.)*
+- **`/order fulfill amount:<whole dollars>`** — mark it fulfilled and set the amount collected. *(any active roster member.)*
+- **`/order done`** — close the order and post its earnings to the ledger. *(any active roster member.)* refuses if no amount is set yet — run `fulfill` first.
+- **`/order cancel`** — cancel this order. *(the claimer or high command only.)*
+
+**the money guarantee:** earnings post to the books **exactly once**. the ledger write is tied to the single `fulfilled → done` step, and once an order is *done* it can't go *done* again — so a job can never be paid twice. and if the ledger write ever fails, the order rolls back to *fulfilled* rather than sitting *done* with no money behind it. entries land on the **white book**, tagged `order`, reason `Order #<n> — <summary>`.
+
+### setup / under the hood
+- **one new table** — `orders` (with a human-readable order number). everything else rides rails already laid: the same two books, the same threads-and-buttons plumbing the storefront introduced.
+- **permissions the bot needs** in the storefront channel: **Create Private Threads**, **Manage Threads**, and **Send Messages** (so it can open tickets and post cards).
+- **optional env** — `CHANNEL_DONATIONS=<channel id>` turns on the private donations log. leave it unset and donations still record and still thank the donor; they just aren't filed to a log channel.
+- **deploy** — run `db/schema-v1.6b.sql` once in Supabase, then `git pull && npm run build && pm2 restart redwood-bot --update-env`.
+- **payroll** is the piece still owed from the ledger's promise. it lands on these same books next.
+
+---
+
 ## v1.6 — the paper trail grows teeth
 
 v1.0 gave the company a memory. this stretch gives it a *nervous system* — the records it was quietly hoarding are now searchable, cross-referenced, and worth money. plus a coat of polish so the whole thing stops looking like a bot and starts looking like an institution.
@@ -27,11 +90,13 @@ people the company deals with earn a standing, and standing can be *revoked*.
 ### the media carousel
 - the website's **Media** section now runs off the bot. `/carousel` manages the slides — the community-outreach stories, the fleet, the storefront — and the site pulls them live. no redeploy to change what the public sees.
 
-### the ledger — `/ledger`
-the company keeps books now. two of them.
-- **white book** (clean, on the record) and **black book** (off it). every entry is an inflow or an outflow with a reason and a source tag.
-- `/ledger record` files an entry; `/ledger summary` shows the balances on both books at a glance.
-- this is the foundation the economy sits on — orders, donations, and payroll all land here next.
+### the ledger — `/ledger` *(v1.6a)*
+the company keeps books now. two of them: a **white book** (clean, on the record) and a **black book** (off it). every entry is an inflow or an outflow with a reason and a source tag (`manual`, `donation`, `order`, …). both commands are **high command only**.
+
+- **`/ledger record amount:<whole dollars> direction:<inflow|outflow> book:<white|black> reason:<text>`** — files a single entry by hand. `direction` and `book` are pick-lists; `amount` is whole dollars (minimum 1); `reason` is free text ("what for"). manual entries are tagged `source=manual`.
+- **`/ledger summary`** — shows the balances on both books at a glance: inflow, outflow, and net for white and black, plus the most recent entries.
+
+this is the foundation the economy sits on — donations and orders (v1.6b) post here automatically, and payroll lands here next.
 
 ### under the hood
 - same shared supabase, same ubuntu box. new tables for lookups, registries, reputation, carousel slides, and the ledger — all gated by clearance, all feeding the website where it's safe to.
